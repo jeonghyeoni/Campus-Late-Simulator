@@ -140,7 +140,7 @@ button {
 .hud-card--heart {
   top: max(24px, env(safe-area-inset-top));
   right: max(24px, env(safe-area-inset-right));
-  width: clamp(230px, 18vw, 330px);
+  width: clamp(280px, 20vw, 350px);
   padding: clamp(17px, 1.55vw, 24px);
   transform: scale(0.8);
   transform-origin: top right;
@@ -148,14 +148,14 @@ button {
 
 .heart-row {
   display: flex;
-  align-items: baseline;
-  gap: 14px;
+  align-items: flex-end;
+  gap: clamp(8px, 1vw, 12px);
   margin-top: 16px;
   min-width: 0;
 }
 
 .heart-icon {
-  width: clamp(42px, 4.3vw, 62px);
+  width: clamp(38px, 3.6vw, 58px);
   flex: 0 0 auto;
   fill: #ff5361;
   filter: drop-shadow(0 6px 14px rgb(255 83 97 / 25%));
@@ -165,7 +165,7 @@ button {
 .heart-value {
   min-width: 0;
   color: #f7fbfa;
-  font-size: clamp(3rem, 5vw, 4.8rem);
+  font-size: clamp(2.85rem, 4.1vw, 4.25rem);
   font-weight: 300;
   line-height: 0.86;
   font-variant-numeric: tabular-nums;
@@ -173,8 +173,9 @@ button {
 
 .heart-unit {
   flex: 0 0 auto;
+  margin-bottom: 0.38em;
   color: rgb(238 244 244 / 72%);
-  font-size: clamp(1rem, 1.65vw, 1.42rem);
+  font-size: clamp(0.92rem, 1.25vw, 1.22rem);
   font-weight: 600;
 }
 
@@ -377,9 +378,13 @@ button {
     border-radius: 14px;
   }
 
-  .hud-card--heart,
   .hud-card--distance {
     width: min(42vw, 290px);
+    padding: 14px;
+  }
+
+  .hud-card--heart {
+    width: min(44vw, 310px);
     padding: 14px;
   }
 
@@ -393,9 +398,12 @@ button {
     padding: 14px;
   }
 
-  .heart-value,
   .distance-value {
     font-size: clamp(2rem, 7vw, 3rem);
+  }
+
+  .heart-value {
+    font-size: clamp(1.85rem, 6.2vw, 2.75rem);
   }
 
   .time-value {
