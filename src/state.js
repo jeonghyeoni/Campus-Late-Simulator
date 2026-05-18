@@ -30,6 +30,9 @@ export class SimulationState {
     this.inputSource.update(deltaSeconds);
     this.videoTime = video?.currentTime ?? 0;
     this.runUnlocked = this.isRunUnlocked(video);
+    if (!this.runUnlocked) {
+      this.inputSource.reset?.();
+    }
     const rawInputActive =
       this.inputSource.isActive?.() ?? this.inputSource.getRunIntensity() > 0.01;
     this.inputActive = rawInputActive && this.runUnlocked;
@@ -221,7 +224,8 @@ export class SimulationState {
     }
 
     if (this.shouldShowRunPrompt()) {
-      this.message = "hold space to run";
+      this.message =
+        this.inputSource.getRunPromptMessage?.() ?? "hold space to run";
       return;
     }
 

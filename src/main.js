@@ -8,7 +8,7 @@ import { VideoScene } from "./videoScene.js";
 const sceneContainer = document.querySelector("#scene");
 const startButton = document.querySelector("#startButton");
 
-const inputSource = new KeyboardRunInput(CONFIG);
+const inputSource = new KeyboardRunInput(CONFIG, sceneContainer);
 const simulationState = new SimulationState(CONFIG, inputSource);
 const videoScene = new VideoScene(sceneContainer, CONFIG);
 const overlayUi = new OverlayUi(CONFIG);
