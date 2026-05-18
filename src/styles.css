@@ -1,0 +1,492 @@
+:root {
+  color: #f5f7f6;
+  background: #050607;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: geometricPrecision;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+button {
+  font: inherit;
+}
+
+#app {
+  position: relative;
+  isolation: isolate;
+  background: #050607;
+}
+
+#scene {
+  position: absolute;
+  inset: 0;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+#scene::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 45%, transparent 48%, rgb(0 0 0 / 18%) 100%),
+    linear-gradient(180deg, rgb(0 0 0 / 10%) 0%, transparent 25%, transparent 70%, rgb(0 0 0 / 18%) 100%);
+}
+
+.scene-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.hud {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.hud-card {
+  position: absolute;
+  min-width: 0;
+  border: 1px solid rgb(216 230 238 / 36%);
+  border-radius: 18px;
+  color: #f4f7f6;
+  background:
+    linear-gradient(135deg, rgb(28 36 38 / 28%), rgb(7 10 12 / 36%)),
+    rgb(8 10 11 / 18%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 18%),
+    0 22px 58px rgb(0 0 0 / 30%);
+  backdrop-filter: blur(15px) saturate(125%);
+}
+
+.hud-label {
+  display: block;
+  color: rgb(238 244 244 / 75%);
+  font-size: clamp(0.74rem, 1.25vw, 1.04rem);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.hud-card--time {
+  top: max(24px, env(safe-area-inset-top));
+  left: max(24px, env(safe-area-inset-left));
+  width: clamp(260px, 23vw, 420px);
+  padding: clamp(20px, 2vw, 30px);
+  transform: scale(0.8);
+  transform-origin: top left;
+}
+
+.time-value {
+  display: block;
+  margin-top: 18px;
+  color: #f7fbfa;
+  font-size: clamp(3rem, 5vw, 4.8rem);
+  font-weight: 300;
+  line-height: 0.9;
+  letter-spacing: 0;
+  text-shadow: 0 2px 16px rgb(0 0 0 / 38%);
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-divider {
+  height: 1px;
+  margin: 22px 0 16px;
+  background: rgb(255 255 255 / 13%);
+}
+
+.class-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  color: rgb(245 247 246 / 78%);
+  font-size: clamp(0.86rem, 1.4vw, 1.14rem);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.class-row span:last-child {
+  color: #ffc454;
+  font-size: clamp(1rem, 1.55vw, 1.35rem);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-card--heart {
+  top: max(24px, env(safe-area-inset-top));
+  right: max(24px, env(safe-area-inset-right));
+  width: clamp(230px, 18vw, 330px);
+  padding: clamp(17px, 1.55vw, 24px);
+  transform: scale(0.8);
+  transform-origin: top right;
+}
+
+.heart-row {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.heart-icon {
+  width: clamp(42px, 4.3vw, 62px);
+  flex: 0 0 auto;
+  fill: #ff5361;
+  filter: drop-shadow(0 6px 14px rgb(255 83 97 / 25%));
+  transform: translateY(5px);
+}
+
+.heart-value {
+  color: #f7fbfa;
+  font-size: clamp(3rem, 5vw, 4.8rem);
+  font-weight: 300;
+  line-height: 0.86;
+  font-variant-numeric: tabular-nums;
+}
+
+.heart-unit {
+  color: rgb(238 244 244 / 72%);
+  font-size: clamp(1rem, 1.65vw, 1.42rem);
+  font-weight: 600;
+}
+
+.hud-card--status {
+  bottom: max(24px, env(safe-area-inset-bottom));
+  left: max(24px, env(safe-area-inset-left));
+  width: clamp(320px, 26vw, 470px);
+  padding: clamp(20px, 2vw, 30px);
+  transform: scale(0.8);
+  transform-origin: bottom left;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 1.5vw, 20px);
+  margin-top: 20px;
+}
+
+.runner-icon {
+  width: clamp(58px, 6vw, 82px);
+  height: clamp(58px, 6vw, 82px);
+  flex: 0 0 auto;
+  overflow: visible;
+  fill: #ff5361;
+  stroke: #ff5361;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 7;
+}
+
+.runner-icon path {
+  fill: none;
+}
+
+.status-value {
+  overflow: visible;
+  color: #ff5361;
+  font-size: clamp(1.75rem, 2.7vw, 2.85rem);
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.speed-chip {
+  position: absolute;
+  right: 18px;
+  bottom: 14px;
+  color: rgb(238 244 244 / 62%);
+  font-size: 0.86rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-card--distance {
+  right: max(24px, env(safe-area-inset-right));
+  bottom: max(24px, env(safe-area-inset-bottom));
+  width: clamp(245px, 21vw, 380px);
+  padding: clamp(19px, 1.8vw, 28px);
+  transform: scale(0.8);
+  transform-origin: bottom right;
+}
+
+.distance-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.distance-value {
+  color: #f7fbfa;
+  font-size: clamp(3.1rem, 5.2vw, 5rem);
+  font-weight: 300;
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 16px rgb(0 0 0 / 35%);
+}
+
+.distance-unit {
+  color: rgb(238 244 244 / 86%);
+  font-size: clamp(1.25rem, 2vw, 1.7rem);
+  font-weight: 600;
+}
+
+.distance-meter {
+  position: relative;
+  height: 26px;
+  margin-top: 18px;
+  padding-right: 34px;
+}
+
+.distance-meter::before {
+  position: absolute;
+  top: 9px;
+  left: 0;
+  right: 34px;
+  height: 8px;
+  border-radius: 999px;
+  content: "";
+  background: rgb(207 220 226 / 24%);
+}
+
+.distance-meter__fill {
+  position: absolute;
+  top: 9px;
+  left: 0;
+  width: calc(100% - 34px);
+  height: 8px;
+  border-radius: 999px;
+  background: #ff5361;
+  box-shadow: 0 0 16px rgb(255 83 97 / 24%);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.flag-icon {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 25px;
+  height: 25px;
+  fill: none;
+  stroke: rgb(238 244 244 / 76%);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.message-overlay {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  width: min(760px, calc(100vw - 48px));
+  max-width: min(760px, calc(100vw - 48px));
+  padding: 0 24px;
+  color: #f7fbfa;
+  font-size: clamp(1.05rem, 2vw, 1.62rem);
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: clamp(0.21rem, 0.68vw, 0.5rem);
+  white-space: pre-line;
+  text-align: center;
+  text-transform: lowercase;
+  text-shadow:
+    0 0 7px rgb(255 255 255 / 82%),
+    0 0 18px rgb(255 255 255 / 48%),
+    0 2px 20px rgb(0 0 0 / 60%);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.96);
+  transition:
+    opacity 650ms ease,
+    transform 650ms ease;
+}
+
+.message-overlay[data-visible="true"] {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.message-overlay[data-tone="success"] {
+  color: #9cf3d0;
+}
+
+.message-overlay[data-tone="failure"],
+.message-overlay[data-tone="notice"] {
+  color: #f7fbfa;
+}
+
+.start-button {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  min-width: 118px;
+  min-height: 46px;
+  padding: 0 22px;
+  border: 1px solid rgb(255 255 255 / 24%);
+  border-radius: 8px;
+  color: #f7fbfa;
+  background: rgb(6 7 8 / 76%);
+  box-shadow: 0 18px 46px rgb(0 0 0 / 38%);
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+}
+
+.start-button--hidden {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .hud-card {
+    border-radius: 14px;
+  }
+
+  .hud-card--time,
+  .hud-card--heart,
+  .hud-card--distance {
+    width: min(42vw, 290px);
+    padding: 14px;
+  }
+
+  .hud-card--status {
+    width: min(48vw, 340px);
+    padding: 14px;
+  }
+
+  .time-value,
+  .heart-value,
+  .distance-value {
+    font-size: clamp(2rem, 7vw, 3rem);
+  }
+
+  .runner-icon {
+    width: 46px;
+    height: 46px;
+    stroke-width: 6;
+  }
+
+  .status-value {
+    font-size: clamp(1.35rem, 4.8vw, 2rem);
+  }
+}
+
+@media (max-width: 620px) {
+  .hud-card--time,
+  .hud-card--heart {
+    top: max(12px, env(safe-area-inset-top));
+  }
+
+  .hud-card--status,
+  .hud-card--distance {
+    bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  .hud-card--time,
+  .hud-card--status {
+    left: max(12px, env(safe-area-inset-left));
+  }
+
+  .hud-card--heart,
+  .hud-card--distance {
+    right: max(12px, env(safe-area-inset-right));
+  }
+
+  .hud-card--time,
+  .hud-card--heart,
+  .hud-card--status,
+  .hud-card--distance {
+    width: calc(50vw - 18px);
+    min-width: 0;
+    padding: 11px;
+  }
+
+  .hud-label {
+    font-size: 0.62rem;
+  }
+
+  .time-value,
+  .heart-value,
+  .distance-value {
+    margin-top: 10px;
+    font-size: clamp(1.72rem, 8vw, 2.35rem);
+  }
+
+  .heart-row,
+  .distance-row,
+  .status-row {
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .heart-icon {
+    width: 30px;
+  }
+
+  .heart-unit,
+  .distance-unit {
+    font-size: 0.82rem;
+  }
+
+  .hud-divider,
+  .class-row,
+  .speed-chip {
+    display: none;
+  }
+
+  .runner-icon {
+    width: 34px;
+    height: 34px;
+    stroke-width: 6;
+  }
+
+  .status-value {
+    font-size: clamp(1rem, 5vw, 1.35rem);
+  }
+
+  .distance-meter {
+    height: 18px;
+    margin-top: 10px;
+    padding-right: 24px;
+  }
+
+  .distance-meter::before,
+  .distance-meter__fill {
+    top: 7px;
+    right: 24px;
+    height: 6px;
+  }
+
+  .distance-meter__fill {
+    width: calc(100% - 24px);
+  }
+
+  .flag-icon {
+    width: 18px;
+    height: 18px;
+  }
+}

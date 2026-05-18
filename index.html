@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Campus Late Simulator</title>
+  </head>
+  <body>
+    <main id="app" aria-label="Campus late simulator">
+      <section id="scene" aria-label="First person campus video"></section>
+
+      <div class="hud" aria-label="Simulation status">
+        <section class="hud-card hud-card--time" aria-label="Current time">
+          <span class="hud-label">TIME</span>
+          <span id="clockValue" class="time-value">10:25:00</span>
+          <div class="hud-divider"></div>
+          <div class="class-row">
+            <span>CLASS STARTS</span>
+            <span id="classStartValue">10:30:00</span>
+          </div>
+        </section>
+
+        <section class="hud-card hud-card--heart" aria-label="Heart rate">
+          <span class="hud-label">HEART RATE</span>
+          <div class="heart-row">
+            <svg class="heart-icon" viewBox="0 0 32 29" aria-hidden="true">
+              <path d="M16 28S1.8 19.4 1.8 9.8C1.8 4.8 5.3 1 10 1c2.6 0 4.7 1.2 6 3.2C17.3 2.2 19.4 1 22 1c4.7 0 8.2 3.8 8.2 8.8C30.2 19.4 16 28 16 28Z" />
+            </svg>
+            <span id="heartValue" class="heart-value">80</span>
+            <span class="heart-unit">BPM</span>
+          </div>
+        </section>
+
+        <section class="hud-card hud-card--status" aria-label="Movement status">
+          <span class="hud-label">STATUS</span>
+          <div class="status-row">
+            <svg class="runner-icon" viewBox="0 0 64 64" aria-hidden="true">
+              <circle cx="45" cy="10" r="7" />
+              <path d="M34 17 22 28l-12-1" />
+              <path d="M22 28 35 34l12 15" />
+              <path d="M35 34 21 47 10 59" />
+              <path d="M28 20 40 27l11-2" />
+            </svg>
+            <span id="paceValue" class="status-value">WALKING</span>
+          </div>
+          <span id="speedValue" class="speed-chip">1.00x</span>
+        </section>
+
+        <section class="hud-card hud-card--distance" aria-label="Distance to classroom">
+          <span class="hud-label">DISTANCE TO CLASSROOM</span>
+          <div class="distance-row">
+            <span id="distanceValue" class="distance-value">230</span>
+            <span class="distance-unit">m</span>
+          </div>
+          <div class="distance-meter" aria-hidden="true">
+            <div id="distanceFill" class="distance-meter__fill"></div>
+            <svg class="flag-icon" viewBox="0 0 24 24">
+              <path d="M6 21V4m0 0c5-2 8 3 13 1v10c-5 2-8-3-13-1" />
+            </svg>
+          </div>
+        </section>
+      </div>
+
+      <div id="messageOverlay" class="message-overlay" aria-live="polite"></div>
+
+      <button id="startButton" class="start-button" type="button">START</button>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

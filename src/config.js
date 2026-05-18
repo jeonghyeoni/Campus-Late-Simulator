@@ -1,0 +1,65 @@
+export const CONFIG = {
+  viewMode: "flat",
+  video: {
+    src: "/videos/CampusLateSimulatorSource.mp4",
+  },
+  flatView: {
+    scale: 1.1,
+    maxTranslateXPercent: 4,
+    maxTranslateYPercent: 2.5,
+    controlAreaRatio: 0.5,
+    smoothing: 9
+  },
+  run: {
+    idleSpeed: 1,
+    maxSpeed: 2,
+    elevatedHeartRateSpeedLimit: 1.8,
+    elevatedHeartRateThresholdBpm: 140,
+    overloadSpeed: 0.2,
+    playbackSmoothing: 4,
+    unlockVideoTimeSeconds: 16,
+    promptDurationSeconds: 4,
+    intensityRisePerSecond: 1.35,
+    intensityFallPerSecond: 0.9,
+    runningThreshold: 0.08
+  },
+  heart: {
+    baseBpm: 80,
+    maxBpm: 176,
+    overloadThresholdBpm: 168,
+    overloadRecoveryThresholdBpm: 140,
+    sampleIntervalSeconds: 1,
+    activeRiseBpmPerSample: 3,
+    recoveryBpmPerSample: 2,
+    overloadRecoveryBpmPerSample: 3,
+    activeJitterBpm: 2,
+    recoveryJitterBpm: 1
+  },
+  overload: {
+    scale: 1.22,
+    swayPercent: 2.1,
+    swayHz: 0.5,
+    blurPx: 4
+  },
+  ending: {
+    durationSeconds: 2,
+    slowSpeed: 0.35,
+    maxBlurPx: 8
+  },
+  message: {
+    fadeMs: 650
+  },
+  clock: {
+    startHours: 10,
+    startMinutes: 27,
+    startSeconds: 0,
+    classStartHours: 10,
+    classStartMinutes: 30,
+    classStartSeconds: 0
+  },
+  distance: {
+    startMeters: 230,
+    walkMetersPerSecond: 1.15,
+    runMetersPerSecond: 3.25
+  }
+};
