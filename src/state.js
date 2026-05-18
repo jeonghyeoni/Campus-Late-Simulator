@@ -207,7 +207,7 @@ export class SimulationState {
       return;
     }
 
-    const arrived = this.distanceMeters <= 0.5 || video.ended;
+    const arrived = video.ended;
     const late = this.getCurrentClockSeconds() >= this.getClassStartSeconds();
 
     if (arrived) {
