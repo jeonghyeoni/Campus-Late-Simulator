@@ -108,11 +108,9 @@ export class VideoScene {
           overload.elapsedSeconds * Math.PI * 2 * this.config.overload.swayHz
         ) * this.config.overload.swayPercent
       : 0;
-    const overloadBlur = overload?.active ? this.config.overload.blurPx : 0;
     const endingBlur = snapshot?.endingEffect?.blurPx ?? 0;
-    const blurPx = Math.max(overloadBlur, endingBlur);
 
     this.video.style.transform = `translate3d(${this.currentOffsetX}%, ${this.currentOffsetY + overloadY}%, 0) scale(${scale})`;
-    this.video.style.filter = blurPx > 0 ? `blur(${blurPx}px)` : "";
+    this.video.style.filter = endingBlur > 0 ? `blur(${endingBlur}px)` : "";
   }
 }

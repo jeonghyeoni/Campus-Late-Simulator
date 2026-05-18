@@ -9,6 +9,7 @@ export class OverlayUi {
     this.distanceValue = document.querySelector("#distanceValue");
     this.distanceFill = document.querySelector("#distanceFill");
     this.messageOverlay = document.querySelector("#messageOverlay");
+    this.vignetteOverlay = document.querySelector("#vignetteOverlay");
     this.displayedMessage = "";
     this.messageClearTimer = null;
 
@@ -29,6 +30,9 @@ export class OverlayUi {
     const distanceProgress =
       1 - snapshot.distanceMeters / this.config.distance.startMeters;
     this.distanceFill.style.transform = `scaleX(${distanceProgress})`;
+    this.vignetteOverlay.dataset.active = snapshot.overload.active
+      ? "true"
+      : "false";
     this.renderMessage(snapshot);
   }
 
