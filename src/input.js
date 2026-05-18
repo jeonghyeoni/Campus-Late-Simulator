@@ -86,6 +86,10 @@ export class KeyboardRunInput {
     return this.prefersTouchInput ? "hold screen to run" : "hold space to run";
   }
 
+  prefersTouch() {
+    return this.prefersTouchInput;
+  }
+
   shouldUseTouchRun(event) {
     return event.pointerType === "touch" || event.pointerType === "pen";
   }

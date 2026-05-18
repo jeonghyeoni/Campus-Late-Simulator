@@ -8,6 +8,7 @@ export class VideoScene {
     this.targetOffsetY = 0;
     this.currentOffsetX = 0;
     this.currentOffsetY = 0;
+    this.lastAppliedPlaybackSpeed = null;
 
     this.video = this.createVideoElement();
     this.video.className = "scene-video";
@@ -67,7 +68,15 @@ export class VideoScene {
   }
 
   setPlaybackSpeed(speed) {
+    if (
+      this.lastAppliedPlaybackSpeed !== null &&
+      Math.abs(this.lastAppliedPlaybackSpeed - speed) < 0.015
+    ) {
+      return;
+    }
+
     this.video.playbackRate = speed;
+    this.lastAppliedPlaybackSpeed = speed;
   }
 
   update(deltaSeconds, snapshot) {

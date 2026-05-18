@@ -16,6 +16,8 @@ export const CONFIG = {
     maxSpeed: 2,
     elevatedHeartRateSpeedLimit: 1.8,
     elevatedHeartRateThresholdBpm: 140,
+    mobileMaxSpeed: 1.45,
+    mobileElevatedHeartRateSpeedLimit: 1.3,
     overloadSpeed: 0.2,
     playbackSmoothing: 4,
     unlockVideoTimeSeconds: 16,

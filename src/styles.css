@@ -10,6 +10,9 @@
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 html,
@@ -19,6 +22,7 @@ body,
   height: 100%;
   margin: 0;
   overflow: hidden;
+  overscroll-behavior: none;
 }
 
 button {
@@ -588,5 +592,115 @@ button {
   .flag-icon {
     width: 14px;
     height: 14px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) and (pointer: coarse) {
+  .hud-card {
+    border-radius: 10px;
+  }
+
+  .hud-card--time {
+    top: max(8px, env(safe-area-inset-top));
+    left: max(8px, env(safe-area-inset-left));
+    width: clamp(210px, 22vw, 260px);
+    padding: 9px 10px;
+    transform: scale(0.66);
+  }
+
+  .hud-card--heart {
+    top: max(8px, env(safe-area-inset-top));
+    right: max(8px, env(safe-area-inset-right));
+    width: clamp(170px, 18vw, 220px);
+    padding: 9px 10px;
+    transform: scale(0.66);
+  }
+
+  .hud-card--status {
+    bottom: max(8px, env(safe-area-inset-bottom));
+    left: max(8px, env(safe-area-inset-left));
+    width: clamp(220px, 26vw, 285px);
+    padding: 9px 10px;
+    transform: scale(0.66);
+  }
+
+  .hud-card--distance {
+    right: max(8px, env(safe-area-inset-right));
+    bottom: max(8px, env(safe-area-inset-bottom));
+    width: clamp(170px, 20vw, 230px);
+    padding: 9px 10px;
+    transform: scale(0.66);
+  }
+
+  .hud-label {
+    font-size: 0.58rem;
+  }
+
+  .time-value,
+  .heart-value,
+  .distance-value {
+    margin-top: 8px;
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+  }
+
+  .heart-row,
+  .status-row,
+  .distance-row {
+    gap: 7px;
+    margin-top: 8px;
+  }
+
+  .heart-icon {
+    width: 26px;
+    transform: translateY(2px);
+  }
+
+  .heart-unit,
+  .distance-unit {
+    font-size: 0.72rem;
+  }
+
+  .runner-icon {
+    width: 32px;
+    height: 32px;
+    stroke-width: 6.5;
+  }
+
+  .status-value {
+    overflow: hidden;
+    font-size: clamp(1rem, 3vw, 1.45rem);
+  }
+
+  .hud-divider,
+  .class-row,
+  .speed-chip {
+    display: none;
+  }
+
+  .distance-meter {
+    height: 16px;
+    margin-top: 8px;
+    padding-right: 20px;
+  }
+
+  .distance-meter::before,
+  .distance-meter__fill {
+    top: 6px;
+    right: 20px;
+    height: 5px;
+  }
+
+  .distance-meter__fill {
+    width: calc(100% - 20px);
+  }
+
+  .flag-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .message-overlay {
+    font-size: clamp(0.82rem, 2.6vw, 1.05rem);
+    letter-spacing: clamp(0.08rem, 0.9vw, 0.18rem);
   }
 }
