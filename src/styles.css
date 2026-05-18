@@ -91,7 +91,7 @@ button {
 .hud-card--time {
   top: max(24px, env(safe-area-inset-top));
   left: max(24px, env(safe-area-inset-left));
-  width: clamp(260px, 23vw, 420px);
+  width: clamp(340px, 25vw, 430px);
   padding: clamp(20px, 2vw, 30px);
   transform: scale(0.8);
   transform-origin: top left;
@@ -101,7 +101,7 @@ button {
   display: block;
   margin-top: 18px;
   color: #f7fbfa;
-  font-size: clamp(3rem, 5vw, 4.8rem);
+  font-size: clamp(2.85rem, 4.2vw, 4.35rem);
   font-weight: 300;
   line-height: 0.9;
   letter-spacing: 0;
@@ -147,6 +147,7 @@ button {
   align-items: baseline;
   gap: 14px;
   margin-top: 16px;
+  min-width: 0;
 }
 
 .heart-icon {
@@ -158,6 +159,7 @@ button {
 }
 
 .heart-value {
+  min-width: 0;
   color: #f7fbfa;
   font-size: clamp(3rem, 5vw, 4.8rem);
   font-weight: 300;
@@ -166,6 +168,7 @@ button {
 }
 
 .heart-unit {
+  flex: 0 0 auto;
   color: rgb(238 244 244 / 72%);
   font-size: clamp(1rem, 1.65vw, 1.42rem);
   font-weight: 600;
@@ -185,6 +188,7 @@ button {
   align-items: center;
   gap: clamp(12px, 1.5vw, 20px);
   margin-top: 20px;
+  min-width: 0;
 }
 
 .runner-icon {
@@ -204,6 +208,7 @@ button {
 }
 
 .status-value {
+  min-width: 0;
   overflow: visible;
   color: #ff5361;
   font-size: clamp(1.75rem, 2.7vw, 2.85rem);
@@ -236,9 +241,11 @@ button {
   align-items: baseline;
   gap: 12px;
   margin-top: 20px;
+  min-width: 0;
 }
 
 .distance-value {
+  min-width: 0;
   color: #f7fbfa;
   font-size: clamp(3.1rem, 5.2vw, 5rem);
   font-weight: 300;
@@ -366,10 +373,14 @@ button {
     border-radius: 14px;
   }
 
-  .hud-card--time,
   .hud-card--heart,
   .hud-card--distance {
     width: min(42vw, 290px);
+    padding: 14px;
+  }
+
+  .hud-card--time {
+    width: min(44vw, 320px);
     padding: 14px;
   }
 
@@ -378,10 +389,13 @@ button {
     padding: 14px;
   }
 
-  .time-value,
   .heart-value,
   .distance-value {
     font-size: clamp(2rem, 7vw, 3rem);
+  }
+
+  .time-value {
+    font-size: clamp(1.8rem, 5.8vw, 2.8rem);
   }
 
   .runner-icon {
@@ -422,34 +436,36 @@ button {
   .hud-card--distance {
     width: calc(50vw - 18px);
     min-width: 0;
-    padding: 11px;
+    padding: 10px;
+    border-radius: 11px;
   }
 
   .hud-label {
-    font-size: 0.62rem;
+    font-size: clamp(0.5rem, 2.3vw, 0.62rem);
   }
 
   .time-value,
   .heart-value,
   .distance-value {
     margin-top: 10px;
-    font-size: clamp(1.72rem, 8vw, 2.35rem);
+    font-size: clamp(1.25rem, 7vw, 1.82rem);
   }
 
   .heart-row,
   .distance-row,
   .status-row {
-    gap: 8px;
+    gap: 6px;
     margin-top: 10px;
   }
 
   .heart-icon {
-    width: 30px;
+    width: clamp(20px, 7vw, 27px);
+    transform: translateY(2px);
   }
 
   .heart-unit,
   .distance-unit {
-    font-size: 0.82rem;
+    font-size: clamp(0.58rem, 2.8vw, 0.75rem);
   }
 
   .hud-divider,
@@ -459,13 +475,15 @@ button {
   }
 
   .runner-icon {
-    width: 34px;
-    height: 34px;
-    stroke-width: 6;
+    width: clamp(24px, 8vw, 30px);
+    height: clamp(24px, 8vw, 30px);
+    stroke-width: 6.5;
   }
 
   .status-value {
-    font-size: clamp(1rem, 5vw, 1.35rem);
+    overflow: hidden;
+    font-size: clamp(0.78rem, 4.5vw, 1.08rem);
+    text-overflow: clip;
   }
 
   .distance-meter {
@@ -488,5 +506,87 @@ button {
   .flag-icon {
     width: 18px;
     height: 18px;
+  }
+
+  .message-overlay {
+    width: calc(100vw - 28px);
+    padding: 0 12px;
+    font-size: clamp(0.88rem, 4.6vw, 1.18rem);
+    letter-spacing: clamp(0.1rem, 1.2vw, 0.24rem);
+  }
+}
+
+@media (max-width: 420px) {
+  .hud-card--time,
+  .hud-card--heart,
+  .hud-card--status,
+  .hud-card--distance {
+    width: calc(50vw - 14px);
+    padding: 8px;
+  }
+
+  .hud-card--time,
+  .hud-card--heart {
+    top: max(8px, env(safe-area-inset-top));
+  }
+
+  .hud-card--status,
+  .hud-card--distance {
+    bottom: max(8px, env(safe-area-inset-bottom));
+  }
+
+  .hud-card--time,
+  .hud-card--status {
+    left: max(8px, env(safe-area-inset-left));
+  }
+
+  .hud-card--heart,
+  .hud-card--distance {
+    right: max(8px, env(safe-area-inset-right));
+  }
+
+  .time-value,
+  .heart-value,
+  .distance-value {
+    font-size: clamp(1rem, 6.4vw, 1.45rem);
+  }
+
+  .heart-unit,
+  .distance-unit {
+    font-size: clamp(0.5rem, 2.5vw, 0.64rem);
+  }
+
+  .heart-icon {
+    width: clamp(17px, 6vw, 22px);
+  }
+
+  .runner-icon {
+    display: none;
+  }
+
+  .status-value {
+    font-size: clamp(0.72rem, 4.6vw, 0.98rem);
+  }
+
+  .distance-meter {
+    height: 14px;
+    margin-top: 7px;
+    padding-right: 18px;
+  }
+
+  .distance-meter::before,
+  .distance-meter__fill {
+    top: 5px;
+    right: 18px;
+    height: 5px;
+  }
+
+  .distance-meter__fill {
+    width: calc(100% - 18px);
+  }
+
+  .flag-icon {
+    width: 14px;
+    height: 14px;
   }
 }

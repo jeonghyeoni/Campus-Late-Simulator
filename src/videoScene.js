@@ -25,7 +25,11 @@ export class VideoScene {
     video.loop = false;
     video.playsInline = true;
     video.preload = "auto";
-    video.crossOrigin = "anonymous";
+
+    if (this.config.video.crossOrigin) {
+      video.crossOrigin = this.config.video.crossOrigin;
+    }
+
     return video;
   }
 

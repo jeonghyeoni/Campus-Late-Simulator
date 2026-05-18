@@ -3,5 +3,5 @@ dist/
 .vite/
 *.log
 
-public/videos/*.MP4
 public/videos/*.mp4
+public/videos/*.MP4

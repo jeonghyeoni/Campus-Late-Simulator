@@ -1,7 +1,8 @@
 export const CONFIG = {
   viewMode: "flat",
   video: {
-    src: "/videos/CampusLateSimulatorSource.mp4",
+    src: "https://pub-2d2d0dec4ce24f1cb3dce6e41e9a12a7.r2.dev/campuslatesimulatorsource.mp4",
+    crossOrigin: null
   },
   flatView: {
     scale: 1.1,
