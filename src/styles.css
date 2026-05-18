@@ -445,14 +445,14 @@ button {
   }
 
   .hud-label {
-    font-size: clamp(0.5rem, 2.3vw, 0.62rem);
+    font-size: clamp(0.55rem, 2.45vw, 0.68rem);
   }
 
   .time-value,
   .heart-value,
   .distance-value {
     margin-top: 10px;
-    font-size: clamp(1.25rem, 7vw, 1.82rem);
+    font-size: clamp(1.35rem, 7.5vw, 1.95rem);
   }
 
   .heart-row,
@@ -463,13 +463,13 @@ button {
   }
 
   .heart-icon {
-    width: clamp(20px, 7vw, 27px);
+    width: clamp(22px, 7.4vw, 30px);
     transform: translateY(2px);
   }
 
   .heart-unit,
   .distance-unit {
-    font-size: clamp(0.58rem, 2.8vw, 0.75rem);
+    font-size: clamp(0.62rem, 3vw, 0.82rem);
   }
 
   .hud-divider,
@@ -479,14 +479,14 @@ button {
   }
 
   .runner-icon {
-    width: clamp(24px, 8vw, 30px);
-    height: clamp(24px, 8vw, 30px);
+    width: clamp(26px, 8.5vw, 33px);
+    height: clamp(26px, 8.5vw, 33px);
     stroke-width: 6.5;
   }
 
   .status-value {
     overflow: hidden;
-    font-size: clamp(0.78rem, 4.5vw, 1.08rem);
+    font-size: clamp(0.84rem, 4.8vw, 1.16rem);
     text-overflow: clip;
   }
 
@@ -552,16 +552,16 @@ button {
   .time-value,
   .heart-value,
   .distance-value {
-    font-size: clamp(1rem, 6.4vw, 1.45rem);
+    font-size: clamp(1.08rem, 6.8vw, 1.55rem);
   }
 
   .heart-unit,
   .distance-unit {
-    font-size: clamp(0.5rem, 2.5vw, 0.64rem);
+    font-size: clamp(0.54rem, 2.8vw, 0.7rem);
   }
 
   .heart-icon {
-    width: clamp(17px, 6vw, 22px);
+    width: clamp(19px, 6.4vw, 24px);
   }
 
   .runner-icon {
@@ -569,7 +569,7 @@ button {
   }
 
   .status-value {
-    font-size: clamp(0.72rem, 4.6vw, 0.98rem);
+    font-size: clamp(0.78rem, 4.9vw, 1.05rem);
   }
 
   .distance-meter {
@@ -605,7 +605,7 @@ button {
     left: max(8px, env(safe-area-inset-left));
     width: clamp(210px, 22vw, 260px);
     padding: 9px 10px;
-    transform: scale(0.66);
+    transform: scale(0.72);
   }
 
   .hud-card--heart {
@@ -613,7 +613,7 @@ button {
     right: max(8px, env(safe-area-inset-right));
     width: clamp(170px, 18vw, 220px);
     padding: 9px 10px;
-    transform: scale(0.66);
+    transform: scale(0.72);
   }
 
   .hud-card--status {
@@ -621,7 +621,7 @@ button {
     left: max(8px, env(safe-area-inset-left));
     width: clamp(220px, 26vw, 285px);
     padding: 9px 10px;
-    transform: scale(0.66);
+    transform: scale(0.72);
   }
 
   .hud-card--distance {
@@ -629,18 +629,18 @@ button {
     bottom: max(8px, env(safe-area-inset-bottom));
     width: clamp(170px, 20vw, 230px);
     padding: 9px 10px;
-    transform: scale(0.66);
+    transform: scale(0.72);
   }
 
   .hud-label {
-    font-size: 0.58rem;
+    font-size: 0.64rem;
   }
 
   .time-value,
   .heart-value,
   .distance-value {
     margin-top: 8px;
-    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    font-size: clamp(1.75rem, 4.4vw, 2.35rem);
   }
 
   .heart-row,
@@ -651,24 +651,24 @@ button {
   }
 
   .heart-icon {
-    width: 26px;
+    width: 29px;
     transform: translateY(2px);
   }
 
   .heart-unit,
   .distance-unit {
-    font-size: 0.72rem;
+    font-size: 0.78rem;
   }
 
   .runner-icon {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     stroke-width: 6.5;
   }
 
   .status-value {
     overflow: hidden;
-    font-size: clamp(1rem, 3vw, 1.45rem);
+    font-size: clamp(1.08rem, 3.25vw, 1.56rem);
   }
 
   .hud-divider,

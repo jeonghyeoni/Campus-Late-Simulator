@@ -20,7 +20,7 @@ export class VideoScene {
 
   createVideoElement() {
     const video = document.createElement("video");
-    video.src = this.config.video.src;
+    video.src = this.getVideoSource();
     video.muted = false;
     video.volume = 1;
     video.loop = false;
@@ -32,6 +32,14 @@ export class VideoScene {
     }
 
     return video;
+  }
+
+  getVideoSource() {
+    const useMobileSource =
+      window.matchMedia?.("(pointer: coarse)").matches &&
+      this.config.video.mobileSrc;
+
+    return useMobileSource ? this.config.video.mobileSrc : this.config.video.src;
   }
 
   bindPointerControls() {
