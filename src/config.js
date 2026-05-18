@@ -2,7 +2,7 @@ export const CONFIG = {
   viewMode: "flat",
   video: {
     src: "https://pub-2d2d0dec4ce24f1cb3dce6e41e9a12a7.r2.dev/campuslatesimulatorsource.mp4",
-    mobileSrc: "https://pub-2d2d0dec4ce24f1cb3dce6e41e9a12a7.r2.dev/campuslatesimulatorsource_mobile.mp4",
+    mobileSrc: "https://pub-2d2d0dec4ce24f1cb3dce6e41e9a12a7.r2.dev/campuslatesimulatorsource_mobile2.mp4",
     crossOrigin: null
   },
   flatView: {
