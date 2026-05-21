@@ -14,8 +14,8 @@ export const CONFIG = {
   },
   run: {
     idleSpeed: 1,
-    maxSpeed: 2,
-    elevatedHeartRateSpeedLimit: 1.8,
+    maxSpeed: 2.3,
+    elevatedHeartRateSpeedLimit: 2,
     elevatedHeartRateThresholdBpm: 140,
     mobileMaxSpeed: 1.45,
     mobileElevatedHeartRateSpeedLimit: 1.3,
@@ -55,8 +55,8 @@ export const CONFIG = {
   },
   clock: {
     startHours: 10,
-    startMinutes: 27,
-    startSeconds: 0,
+    startMinutes: 26,
+    startSeconds: 48,
     classStartHours: 10,
     classStartMinutes: 30,
     classStartSeconds: 0
