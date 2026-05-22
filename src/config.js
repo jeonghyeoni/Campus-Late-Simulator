@@ -46,9 +46,10 @@ export const CONFIG = {
     blurPx: 4
   },
   ending: {
-    durationSeconds: 2,
+    durationSeconds: 0.35,
     slowSpeed: 0.35,
-    maxBlurPx: 8
+    maxBlurPx: 8,
+    completionThresholdSeconds: 0.02
   },
   message: {
     fadeMs: 650

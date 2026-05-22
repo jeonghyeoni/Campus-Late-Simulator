@@ -207,7 +207,10 @@ export class SimulationState {
       return;
     }
 
-    const arrived = video.ended;
+    const arrived =
+      video.ended &&
+      video.currentTime >=
+        video.duration - this.config.ending.completionThresholdSeconds;
     const late = this.getCurrentClockSeconds() >= this.getClassStartSeconds();
 
     if (arrived) {
