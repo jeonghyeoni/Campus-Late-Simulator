@@ -2,7 +2,23 @@ export const CONFIG = {
   viewMode: "flat",
   video: {
     src: "https://pub-2d2d0dec4ce24f1cb3dce6e41e9a12a7.r2.dev/campuslatesimulatorsource.mp4",
-    mobileSrc: "https://pub-2d2d0dec4ce24f1cb3dce6e41e9a12a7.r2.dev/campuslatesimulatorsource_mobile2.mp4",
+    sources: [
+      {
+        id: "4k",
+        label: "4K",
+        src: "https://pub-2d2d0dec4ce24f1cb3dce6e41e9a12a7.r2.dev/campuslatesimulatorsource.mp4"
+      },
+      {
+        id: "1080p",
+        label: "1080p",
+        src: "https://pub-2d2d0dec4ce24f1cb3dce6e41e9a12a7.r2.dev/campuslatesimulatorsource_mobile.mp4"
+      },
+      {
+        id: "720p",
+        label: "720p",
+        src: "https://pub-2d2d0dec4ce24f1cb3dce6e41e9a12a7.r2.dev/campuslatesimulatorsource_mobile2.mp4"
+      }
+    ],
     crossOrigin: null
   },
   flatView: {

@@ -35,11 +35,18 @@ export class VideoScene {
   }
 
   getVideoSource() {
-    const useMobileSource =
-      window.matchMedia?.("(pointer: coarse)").matches &&
-      this.config.video.mobileSrc;
+    return this.config.video.src;
+  }
 
-    return useMobileSource ? this.config.video.mobileSrc : this.config.video.src;
+  setSource(src) {
+    if (!src || this.video.currentSrc === src || this.video.src === src) {
+      return;
+    }
+
+    this.video.pause();
+    this.video.src = src;
+    this.video.load();
+    this.lastAppliedPlaybackSpeed = null;
   }
 
   bindPointerControls() {

@@ -7,6 +7,8 @@ import { VideoScene } from "./videoScene.js";
 
 const sceneContainer = document.querySelector("#scene");
 const startButton = document.querySelector("#startButton");
+const startPanel = document.querySelector("#startPanel");
+const qualitySelect = document.querySelector("#qualitySelect");
 
 const inputSource = new KeyboardRunInput(CONFIG, sceneContainer);
 const simulationState = new SimulationState(CONFIG, inputSource);
@@ -20,6 +22,18 @@ window.campusLateSimulator = {
   getState: () => simulationState.getSnapshot(),
   getInputSource: () => inputSource
 };
+
+function populateQualitySelect() {
+  qualitySelect.replaceChildren(
+    ...CONFIG.video.sources.map((source) => {
+      const option = document.createElement("option");
+      option.value = source.src;
+      option.textContent = source.label;
+      option.selected = source.src === CONFIG.video.src;
+      return option;
+    })
+  );
+}
 
 function tick(now) {
   const deltaSeconds = Math.min((now - previousTime) / 1000, 0.05);
@@ -49,12 +63,22 @@ async function startExperience() {
     await videoScene.play();
     started = true;
     previousTime = performance.now();
-    startButton.classList.add("start-button--hidden");
+    startPanel.classList.add("start-panel--hidden");
   } catch (error) {
-    startButton.classList.remove("start-button--hidden");
+    startPanel.classList.remove("start-panel--hidden");
     console.warn("Video playback needs a user gesture.", error);
   }
 }
+
+populateQualitySelect();
+
+qualitySelect.addEventListener("change", () => {
+  if (started) {
+    return;
+  }
+
+  videoScene.setSource(qualitySelect.value);
+});
 
 startButton.addEventListener("click", startExperience);
 

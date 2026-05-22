@@ -64,7 +64,13 @@
 
       <div id="messageOverlay" class="message-overlay" aria-live="polite"></div>
 
-      <button id="startButton" class="start-button" type="button">START</button>
+      <div id="startPanel" class="start-panel">
+        <label class="quality-picker" for="qualitySelect">
+          <span>quality</span>
+          <select id="qualitySelect" aria-label="Video quality"></select>
+        </label>
+        <button id="startButton" class="start-button" type="button">START</button>
+      </div>
     </main>
 
     <script type="module" src="/src/main.js"></script>
