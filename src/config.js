@@ -19,7 +19,13 @@ export const CONFIG = {
         src: "https://pub-2d2d0dec4ce24f1cb3dce6e41e9a12a7.r2.dev/campuslatesimulatorsource_mobile2.mp4"
       }
     ],
-    crossOrigin: null
+    crossOrigin: null,
+    muted: true
+  },
+  audio: {
+    enabled: true,
+    patchUrl: "/rnbo/CampusLateAudioEngine.export.json",
+    defaultHeartVolume: 1
   },
   flatView: {
     scale: 1.1,

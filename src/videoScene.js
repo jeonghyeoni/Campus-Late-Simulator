@@ -21,8 +21,8 @@ export class VideoScene {
   createVideoElement() {
     const video = document.createElement("video");
     video.src = this.getVideoSource();
-    video.muted = false;
-    video.volume = 1;
+    video.muted = this.config.video.muted;
+    video.volume = this.config.video.muted ? 0 : 1;
     video.loop = false;
     video.playsInline = true;
     video.preload = "auto";

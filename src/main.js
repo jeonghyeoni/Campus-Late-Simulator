@@ -4,6 +4,7 @@ import { KeyboardRunInput } from "./input.js";
 import { SimulationState } from "./state.js";
 import { OverlayUi } from "./ui.js";
 import { VideoScene } from "./videoScene.js";
+import { AudioEngine } from "./audioEngine.js";
 
 const sceneContainer = document.querySelector("#scene");
 const startButton = document.querySelector("#startButton");
@@ -14,13 +15,15 @@ const inputSource = new KeyboardRunInput(CONFIG, sceneContainer);
 const simulationState = new SimulationState(CONFIG, inputSource);
 const videoScene = new VideoScene(sceneContainer, CONFIG);
 const overlayUi = new OverlayUi(CONFIG);
+const audioEngine = new AudioEngine(CONFIG.audio);
 
 let previousTime = performance.now();
 let started = false;
 
 window.campusLateSimulator = {
   getState: () => simulationState.getSnapshot(),
-  getInputSource: () => inputSource
+  getInputSource: () => inputSource,
+  getAudioEngine: () => audioEngine
 };
 
 function populateQualitySelect() {
@@ -47,6 +50,7 @@ function tick(now) {
 
   videoScene.setPlaybackSpeed(snapshot.playbackSpeed);
   videoScene.update(deltaSeconds, snapshot);
+  audioEngine.updateFromSnapshot(snapshot);
   overlayUi.render(snapshot);
 
   window.dispatchEvent(
@@ -60,6 +64,7 @@ function tick(now) {
 
 async function startExperience() {
   try {
+    audioEngine.start();
     await videoScene.play();
     started = true;
     previousTime = performance.now();
