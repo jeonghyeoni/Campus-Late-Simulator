@@ -89,11 +89,22 @@ export class SimulationState {
     this.heartSampleAccumulator += deltaSeconds;
 
     while (
-      this.heartSampleAccumulator >= this.config.heart.sampleIntervalSeconds
+      this.heartSampleAccumulator >= this.getHeartSampleIntervalSeconds()
     ) {
-      this.heartSampleAccumulator -= this.config.heart.sampleIntervalSeconds;
+      this.heartSampleAccumulator -= this.getHeartSampleIntervalSeconds();
       this.sampleHeartRate();
     }
+  }
+
+  getHeartSampleIntervalSeconds() {
+    if (this.inputActive && !this.isOverloaded()) {
+      return (
+        this.config.heart.activeSampleIntervalSeconds ??
+        this.config.heart.sampleIntervalSeconds
+      );
+    }
+
+    return this.config.heart.sampleIntervalSeconds;
   }
 
   sampleHeartRate() {
