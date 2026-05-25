@@ -9,7 +9,7 @@
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {
-    "@rnbo/js": "^1.4.4"
+    "@rnbo/js": "^1.4.3"
   },
   "devDependencies": {
     "vite": "^7.0.0"

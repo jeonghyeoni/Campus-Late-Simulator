@@ -25,7 +25,11 @@ export const CONFIG = {
   audio: {
     enabled: true,
     patchUrl: "/rnbo/CampusLateAudioEngine.export.json",
-    defaultHeartVolume: 1
+    dependenciesUrl: "/rnbo/dependencies.json",
+    debug: {
+      dataBuffers: true,
+      verifyDataBufferAfterSet: true
+    }
   },
   flatView: {
     scale: 1.1,

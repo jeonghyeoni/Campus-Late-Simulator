@@ -1,4 +1,4 @@
-import { createDevice } from "@rnbo/js";
+import { createDevice, TransportEvent, TransportState } from "@rnbo/js";
 
 export class AudioEngine {
   constructor(config) {
@@ -9,6 +9,7 @@ export class AudioEngine {
     this.ready = false;
     this.parameterCache = new Map();
     this.missingParameters = new Set();
+    this.patcher = null;
   }
 
   async start() {
@@ -51,16 +52,286 @@ export class AudioEngine {
     }
 
     const patcher = await response.json();
+    this.patcher = patcher;
+    this.logPatcherDataBuffers(patcher);
+
     this.device = await createDevice({
       context: this.audioContext,
       patcher
     });
+    this.logDeviceDataBuffers();
 
     this.device.node.connect(this.audioContext.destination);
+    await this.loadDataBufferDependencies();
+    this.startTransport();
     this.ready = true;
-    this.setParameter("heartVol", this.config.defaultHeartVolume ?? 1);
 
     return true;
+  }
+
+  startTransport() {
+    if (!this.device?.scheduleEvent) {
+      return;
+    }
+
+    this.device.scheduleEvent(
+      new TransportEvent(
+        this.audioContext.currentTime * 1000,
+        TransportState.RUNNING
+      )
+    );
+    console.info("RNBO transport started.");
+  }
+
+  async loadDataBufferDependencies() {
+    const dependencies = await this.getDataBufferDependencies();
+    this.logResolvedDependencies(dependencies);
+
+    if (!dependencies.length) {
+      return;
+    }
+
+    const failedDirectLoads = await this.loadDataBuffersDirectly(dependencies);
+    if (!failedDirectLoads.length || !this.device?.loadDataBufferDependencies) {
+      return;
+    }
+
+    try {
+      const results = await this.device.loadDataBufferDependencies(
+        failedDirectLoads.map((failure) => failure.dependency)
+      );
+      const failed = results.filter((result) => result.type === "fail");
+
+      if (failed.length) {
+        console.warn("Some RNBO media dependencies failed to load.", failed);
+      }
+    } catch (error) {
+      console.warn("RNBO media dependencies could not be loaded.", error);
+    }
+  }
+
+  async loadDataBuffersDirectly(dependencies) {
+    const failed = [];
+
+    await Promise.all(
+      dependencies.map(async (dependency) => {
+        try {
+          await this.loadDataBuffer(dependency);
+        } catch (error) {
+          failed.push({ dependency, error });
+          console.warn(
+            `RNBO media dependency "${dependency.id}" could not be loaded directly.`,
+            error
+          );
+        }
+      })
+    );
+
+    return failed;
+  }
+
+  async loadDataBuffer(dependency) {
+    if (!dependency.id || !dependency.file) {
+      throw new Error("RNBO media dependency is missing an id or file path.");
+    }
+
+    console.info("RNBO media fetch URL:", {
+      id: dependency.id,
+      url: dependency.file
+    });
+
+    const response = await fetch(dependency.file);
+    const contentType = response.headers.get("content-type");
+
+    console.info("RNBO media fetch response:", {
+      id: dependency.id,
+      requestedUrl: dependency.file,
+      responseUrl: response.url,
+      status: response.status,
+      contentType
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Unable to load ${dependency.file}: ${response.status} ${response.statusText}`
+      );
+    }
+
+    if (contentType?.includes("text/html")) {
+      throw new Error(
+        `RNBO media dependency "${dependency.id}" resolved to HTML instead of audio. ` +
+          `Check that the final URL points to /rnbo/media/${dependency.id}.wav. ` +
+          `Resolved URL: ${response.url}`
+      );
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+    const setResult = await this.device.setDataBuffer(
+      dependency.id,
+      audioBuffer
+    );
+
+    console.info(`RNBO setDataBuffer("${dependency.id}") completed.`, {
+      file: dependency.file,
+      result: setResult,
+      channels: audioBuffer.numberOfChannels,
+      duration: audioBuffer.duration,
+      length: audioBuffer.length,
+      sampleRate: audioBuffer.sampleRate
+    });
+
+    await this.verifyInjectedDataBuffer(dependency.id, audioBuffer);
+  }
+
+  async verifyInjectedDataBuffer(id, sourceAudioBuffer) {
+    if (!this.config.debug?.verifyDataBufferAfterSet) {
+      return;
+    }
+
+    if (!this.device?.releaseDataBuffer) {
+      console.warn("RNBO device does not expose releaseDataBuffer().");
+      return;
+    }
+
+    try {
+      const releasedDataBuffer = await this.device.releaseDataBuffer(id);
+      const internalAudioBuffer =
+        releasedDataBuffer.getAsAudioBuffer(this.audioContext);
+
+      console.info(`RNBO internal data buffer "${id}" verified.`, {
+        channels: internalAudioBuffer.numberOfChannels,
+        duration: internalAudioBuffer.duration,
+        length: internalAudioBuffer.length,
+        sampleRate: internalAudioBuffer.sampleRate
+      });
+
+      await this.device.setDataBuffer(id, sourceAudioBuffer);
+      console.info(`RNBO internal data buffer "${id}" restored after verify.`);
+    } catch (error) {
+      console.warn(`RNBO internal data buffer "${id}" verification failed.`, {
+        error
+      });
+    }
+  }
+
+  async getDataBufferDependencies() {
+    const exportedDependencies = await this.fetchDependenciesJson();
+
+    if (exportedDependencies.length) {
+      return exportedDependencies.map((dependency) =>
+        this.normalizeDependency(dependency)
+      );
+    }
+
+    return (this.device.dataBufferDescriptions ?? []).map((dependency) =>
+      this.normalizeDependency(dependency)
+    );
+  }
+
+  logPatcherDataBuffers(patcher) {
+    if (!this.config.debug?.dataBuffers) {
+      return;
+    }
+
+    const externalDataRefs = patcher?.desc?.externalDataRefs ?? [];
+    console.info("RNBO patcher externalDataRefs:", externalDataRefs);
+  }
+
+  logDeviceDataBuffers() {
+    if (!this.config.debug?.dataBuffers) {
+      return;
+    }
+
+    console.info("RNBO device dataBufferIds:", this.device?.dataBufferIds ?? []);
+    console.info(
+      "RNBO device dataBufferDescriptions:",
+      this.device?.dataBufferDescriptions ?? []
+    );
+  }
+
+  logResolvedDependencies(dependencies) {
+    if (!this.config.debug?.dataBuffers) {
+      return;
+    }
+
+    const deviceIds = new Set(this.device?.dataBufferIds ?? []);
+
+    console.info("RNBO resolved media dependencies:", dependencies);
+
+    dependencies.forEach((dependency) => {
+      const matchesDeviceId = deviceIds.has(dependency.id);
+      const message = {
+        dependencyId: dependency.id,
+        file: dependency.file,
+        deviceDataBufferIds: [...deviceIds],
+        matchesDeviceId
+      };
+
+      if (matchesDeviceId) {
+        console.info("RNBO dependency id matches device data buffer id.", message);
+      } else {
+        console.warn(
+          "RNBO dependency id does not match any device data buffer id.",
+          message
+        );
+      }
+    });
+  }
+
+  async fetchDependenciesJson() {
+    if (!this.config.dependenciesUrl) {
+      return [];
+    }
+
+    try {
+      const response = await fetch(this.config.dependenciesUrl);
+      if (!response.ok) {
+        console.warn(
+          `RNBO dependencies file was not loaded: ${response.status} ${response.statusText}`
+        );
+        return [];
+      }
+
+      const dependencies = await response.json();
+      return Array.isArray(dependencies) ? dependencies : [];
+    } catch (error) {
+      console.warn("RNBO dependencies file could not be read.", error);
+      return [];
+    }
+  }
+
+  normalizeDependency(dependency) {
+    const file = dependency.file ?? dependency.url;
+
+    return {
+      ...dependency,
+      file: this.resolveDependencyUrl(file)
+    };
+  }
+
+  resolveDependencyUrl(file) {
+    if (!file) {
+      return file;
+    }
+
+    const browserPath = file.replaceAll("\\", "/");
+
+    if (/^(https?:)?\/\//.test(browserPath)) {
+      return browserPath;
+    }
+
+    const normalizedPath = browserPath.replace(/^\/+/, "");
+    const mediaPath = normalizedPath.startsWith("media/")
+      ? normalizedPath
+      : `media/${normalizedPath}`;
+    const patchUrl = new URL(this.config.patchUrl, window.location.origin);
+    const rnboDirectory = patchUrl.pathname
+      .split("/")
+      .slice(0, -1)
+      .join("/");
+
+    return `${rnboDirectory}/${mediaPath}`;
   }
 
   updateFromSnapshot(snapshot) {
