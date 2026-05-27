@@ -102,6 +102,8 @@ export class SimulationState {
       this.targetPlaybackSpeed = this.config.run.overloadSpeed;
     } else if (this.endingEffect.active) {
       this.targetPlaybackSpeed = this.config.ending.slowSpeed;
+    } else if (this.isSensorInputMode() && !this.isRunningIntentActive()) {
+      this.targetPlaybackSpeed = this.config.run.idleSpeed;
     } else {
       this.targetPlaybackSpeed =
       this.config.run.idleSpeed +
