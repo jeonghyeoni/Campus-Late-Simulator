@@ -54,7 +54,11 @@ export class SimulationState {
       this.isOverloaded() || this.shouldBlockRunning()
         ? 0
         : requestedRunIntensity;
-    this.isRunning = this.runIntensity > this.config.run.runningThreshold;
+    this.isRunning =
+      !this.isOverloaded() &&
+      !this.shouldBlockRunning() &&
+      this.runUnlocked &&
+      this.isRunningIntentActive();
 
     this.updateHeartRate(deltaSeconds);
     this.updateDistanceFromVideo(video);
@@ -307,6 +311,13 @@ export class SimulationState {
 
   isOverloaded() {
     return this.overloadActive;
+  }
+
+  isRunningIntentActive() {
+    return (
+      this.inputSource.isRunningIntent?.() ??
+      this.runIntensity > this.config.run.runningThreshold
+    );
   }
 
   isSensorInputMode() {

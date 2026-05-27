@@ -78,6 +78,10 @@ export class KeyboardRunInput {
     return this.spacePressed || this.touchPressed;
   }
 
+  isRunningIntent() {
+    return this.runIntensity > this.config.run.runningThreshold;
+  }
+
   reset() {
     this.runIntensity = 0;
   }
@@ -398,6 +402,10 @@ export class TdInputRunInput {
       this.runIntensity > this.sensorConfig.runningThreshold ||
       this.targetRunIntensity > this.sensorConfig.runningThreshold
     );
+  }
+
+  isRunningIntent() {
+    return this.targetRunIntensity > this.sensorConfig.runningThreshold;
   }
 
   reset() {
@@ -860,6 +868,20 @@ export class RunInputManager {
         ? this.motionInput.isActive()
         : this.tdInput.isActive()) ||
       (this.config.bridge.keyboardFallback && this.keyboardInput.isActive())
+    );
+  }
+
+  isRunningIntent() {
+    if (this.mode === "keyboard") {
+      return this.keyboardInput.isRunningIntent();
+    }
+
+    const activeSensorInput =
+      this.mode === "phone-motion" ? this.motionInput : this.tdInput;
+    return (
+      activeSensorInput.isRunningIntent() ||
+      (this.config.bridge.keyboardFallback &&
+        this.keyboardInput.isRunningIntent())
     );
   }
 
