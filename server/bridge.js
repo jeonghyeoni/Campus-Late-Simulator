@@ -302,7 +302,7 @@ export class BridgeServer {
     const roomToken = typeof message.roomToken === "string" ? message.roomToken : "";
     const room = roomId ? this.rooms.get(roomId) : null;
 
-    if (!room || (roomToken && room.token !== roomToken)) {
+    if (!room || socket.role !== "host" || room.token !== roomToken) {
       this.sendError(socket, "release_failed", "Room was not found.");
       return;
     }
