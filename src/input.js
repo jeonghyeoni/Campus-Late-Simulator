@@ -405,7 +405,6 @@ export class TdInputRunInput {
     this.targetRunIntensity = 0;
     this.baselineMagnitude = null;
     this.lastAcceleration = null;
-    this.lastSensorAt = 0;
   }
 
   getRunPromptMessage() {
@@ -761,7 +760,6 @@ export class SmartphoneMotionRunInput extends TdInputRunInput {
 
   reset() {
     super.reset();
-    this.controllerConnected = false;
   }
 
   isReadyToStart() {

@@ -14,6 +14,7 @@ import { AudioEngine } from "./audioEngine.js";
 
 const sceneContainer = document.querySelector("#scene");
 const startButton = document.querySelector("#startButton");
+const retryButton = document.querySelector("#retryButton");
 const startPanel = document.querySelector("#startPanel");
 const qualitySelect = document.querySelector("#qualitySelect");
 const inputModeControls = document.querySelectorAll("input[name='inputMode']");
@@ -83,6 +84,7 @@ function tick(now) {
   videoScene.update(deltaSeconds, snapshot);
   audioEngine.updateFromSnapshot(snapshot);
   overlayUi.render(snapshot);
+  renderRetryButton(snapshot);
   renderTdInputConnection();
 
   window.dispatchEvent(
@@ -199,6 +201,28 @@ async function startExperience() {
   }
 }
 
+async function retryExperience() {
+  simulationState.reset();
+  videoScene.resetToStart();
+  retryButton.hidden = true;
+  started = false;
+
+  try {
+    await videoScene.play();
+    started = true;
+    previousTime = performance.now();
+    startPanel.classList.add("start-panel--hidden");
+  } catch (error) {
+    startPanel.classList.remove("start-panel--hidden");
+    renderStartButton();
+    console.warn("Video retry needs a user gesture.", error);
+  }
+}
+
+function renderRetryButton(snapshot) {
+  retryButton.hidden = !snapshot.outcome;
+}
+
 populateQualitySelect();
 
 qualitySelect.addEventListener("change", () => {
@@ -222,6 +246,7 @@ inputModeControls.forEach((control) => {
 });
 
 startButton.addEventListener("click", startExperience);
+retryButton.addEventListener("click", retryExperience);
 
 videoScene.video.addEventListener("error", () => {
   videoUnavailable = true;
@@ -229,5 +254,6 @@ videoScene.video.addEventListener("error", () => {
 });
 
 overlayUi.render(simulationState.getSnapshot());
+renderRetryButton(simulationState.getSnapshot());
 renderStartButton();
 requestAnimationFrame(tick);

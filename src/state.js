@@ -4,6 +4,10 @@ export class SimulationState {
   constructor(config, inputSource) {
     this.config = config;
     this.inputSource = inputSource;
+    this.reset();
+  }
+
+  reset() {
     this.elapsedClockSeconds = 0;
     this.runIntensity = 0;
     this.inputActive = false;
@@ -24,6 +28,7 @@ export class SimulationState {
     };
     this.message = "";
     this.outcome = null;
+    this.inputSource.reset?.();
   }
 
   update(deltaSeconds, video) {

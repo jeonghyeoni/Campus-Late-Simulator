@@ -82,6 +82,24 @@ export class VideoScene {
     return this.video.play();
   }
 
+  resetToStart() {
+    this.video.pause();
+
+    try {
+      this.video.currentTime = 0;
+    } catch (error) {
+      console.warn("Unable to seek video to the beginning.", error);
+    }
+
+    this.targetOffsetX = 0;
+    this.targetOffsetY = 0;
+    this.currentOffsetX = 0;
+    this.currentOffsetY = 0;
+    this.video.playbackRate = this.config.run.idleSpeed;
+    this.lastAppliedPlaybackSpeed = this.config.run.idleSpeed;
+    this.updateTransform();
+  }
+
   setPlaybackSpeed(speed) {
     if (
       this.lastAppliedPlaybackSpeed !== null &&
