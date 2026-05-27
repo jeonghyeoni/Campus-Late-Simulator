@@ -1,6 +1,12 @@
 import "./styles.css";
+import QRCode from "qrcode";
 import { CONFIG } from "./config.js";
-import { KeyboardRunInput, RunInputManager, TdInputRunInput } from "./input.js";
+import {
+  KeyboardRunInput,
+  RunInputManager,
+  SmartphoneMotionRunInput,
+  TdInputRunInput
+} from "./input.js";
 import { SimulationState } from "./state.js";
 import { OverlayUi } from "./ui.js";
 import { VideoScene } from "./videoScene.js";
@@ -16,10 +22,22 @@ const tdInputStatus = document.querySelector("#tdInputStatus");
 const tdInputRoomId = document.querySelector("#tdInputRoomId");
 const tdInputServerHost = document.querySelector("#tdInputServerHost");
 const tdInputUdpPort = document.querySelector("#tdInputUdpPort");
+const tdInputServerLabel = document.querySelector("#tdInputServerLabel");
+const tdInputUdpLabel = document.querySelector("#tdInputUdpLabel");
+const tdInputInstructions = document.querySelector("#tdInputInstructions");
+const motionQrPanel = document.querySelector("#motionQrPanel");
+const motionQrCanvas = document.querySelector("#motionQrCanvas");
+const motionControllerUrl = document.querySelector("#motionControllerUrl");
 
 const keyboardInput = new KeyboardRunInput(CONFIG, sceneContainer);
 const tdInput = new TdInputRunInput(CONFIG);
-const inputSource = new RunInputManager(CONFIG, keyboardInput, tdInput);
+const motionInput = new SmartphoneMotionRunInput(CONFIG);
+const inputSource = new RunInputManager(
+  CONFIG,
+  keyboardInput,
+  tdInput,
+  motionInput
+);
 const simulationState = new SimulationState(CONFIG, inputSource);
 const videoScene = new VideoScene(sceneContainer, CONFIG);
 const overlayUi = new OverlayUi(CONFIG);
@@ -32,8 +50,11 @@ window.campusLateSimulator = {
   getState: () => simulationState.getSnapshot(),
   getInputSource: () => inputSource,
   getTdInput: () => tdInput,
+  getMotionInput: () => motionInput,
   getAudioEngine: () => audioEngine
 };
+
+let renderedMotionQrUrl = "";
 
 function populateQualitySelect() {
   qualitySelect.replaceChildren(
@@ -74,7 +95,8 @@ function tick(now) {
 
 function renderTdInputConnection() {
   const mode = inputSource.getMode();
-  const sensorMode = mode === "phone" || mode === "watch";
+  const sensorMode = mode === "phone" || mode === "watch" || mode === "phone-motion";
+  const motionMode = mode === "phone-motion";
   tdInputConnection.hidden = !sensorMode;
   startPanel.dataset.inputMode = mode;
 
@@ -89,6 +111,40 @@ function renderTdInputConnection() {
   tdInputServerHost.textContent =
     connection.serverHost || getHostFromWebSocketUrl(CONFIG.bridge.wsUrl);
   tdInputUdpPort.textContent = connection.udpPort || "----";
+  tdInputServerLabel.hidden = motionMode;
+  tdInputServerHost.hidden = motionMode;
+  tdInputUdpLabel.hidden = motionMode;
+  tdInputUdpPort.hidden = motionMode;
+  motionQrPanel.hidden = !motionMode || !connection.controllerUrl;
+  tdInputInstructions.textContent = motionMode
+    ? "Scan this QR code with your phone browser."
+    : "Enter this Server IP and UDP Port in TDInput.";
+
+  if (motionMode && connection.controllerUrl) {
+    renderMotionQr(connection.controllerUrl);
+    motionControllerUrl.href = connection.controllerUrl;
+    motionControllerUrl.textContent = connection.controllerUrl;
+  } else {
+    renderedMotionQrUrl = "";
+  }
+}
+
+function renderMotionQr(url) {
+  if (url === renderedMotionQrUrl) {
+    return;
+  }
+
+  renderedMotionQrUrl = url;
+  QRCode.toCanvas(motionQrCanvas, url, {
+    width: 168,
+    margin: 1,
+    color: {
+      dark: "#050607",
+      light: "#f7fbfa"
+    }
+  }).catch((error) => {
+    console.warn("Unable to render controller QR code.", error);
+  });
 }
 
 function getHostFromWebSocketUrl(url) {

@@ -104,8 +104,11 @@ export class BridgeServer {
 
     for (const room of this.rooms.values()) {
       this.closeUdpSocket(room);
-      if (room.client?.readyState === WebSocket.OPEN) {
-        room.client.close(1001, "Bridge shutting down");
+      if (room.hostClient?.readyState === WebSocket.OPEN) {
+        room.hostClient.close(1001, "Bridge shutting down");
+      }
+      if (room.controllerClient?.readyState === WebSocket.OPEN) {
+        room.controllerClient.close(1001, "Bridge shutting down");
       }
     }
 
@@ -153,6 +156,7 @@ export class BridgeServer {
 
     socket.isAlive = true;
     socket.roomId = null;
+    socket.role = null;
     socket.on("pong", () => {
       socket.isAlive = true;
     });
@@ -226,8 +230,22 @@ export class BridgeServer {
       return;
     }
 
+    if (message.type === "join-controller") {
+      this.handleJoinController(socket, request, message);
+      return;
+    }
+
+    if (message.type === "controller-motion") {
+      this.handleControllerMotion(socket, message);
+      return;
+    }
+
     if (message.type === "ping") {
-      this.sendJson(socket, { type: "pong", receivedAt: Date.now() });
+      this.sendJson(socket, {
+        type: "pong",
+        sentAt: Number.isFinite(message.sentAt) ? message.sentAt : null,
+        receivedAt: Date.now()
+      });
       return;
     }
 
@@ -237,13 +255,17 @@ export class BridgeServer {
   async handleCreateRoom(socket, request, message) {
     const mode = this.normalizeMode(message.mode);
     if (!mode) {
-      this.sendError(socket, "invalid_mode", "Mode must be phone or watch.");
+      this.sendError(
+        socket,
+        "invalid_mode",
+        "Mode must be phone, watch, or phone-motion."
+      );
       return;
     }
 
     try {
       const room = await this.createRoom(mode, request);
-      this.attachClientToRoom(room, socket);
+      this.attachHostToRoom(room, socket);
       this.sendJson(socket, {
         type: "room-created",
         room: this.getRoomPayload(room, request)
@@ -264,7 +286,7 @@ export class BridgeServer {
       return;
     }
 
-    this.attachClientToRoom(room, socket);
+    this.attachHostToRoom(room, socket);
     this.sendJson(socket, {
       type: "room-resumed",
       room: this.getRoomPayload(room, request)
@@ -288,6 +310,136 @@ export class BridgeServer {
     this.cleanupRoom(room.id, "client release");
   }
 
+  handleJoinController(socket, request, message) {
+    const roomId = this.normalizeRoomId(message.roomId);
+    const room = roomId ? this.rooms.get(roomId) : null;
+
+    if (!room) {
+      this.sendError(socket, "room_not_found", "Room was not found.");
+      return;
+    }
+
+    if (room.mode !== "phone-motion") {
+      this.sendError(
+        socket,
+        "invalid_room_mode",
+        "This room is not waiting for a browser motion controller."
+      );
+      return;
+    }
+
+    this.attachControllerToRoom(room, socket, request);
+  }
+
+  handleControllerMotion(socket, message) {
+    if (socket.role !== "controller" || !socket.roomId) {
+      this.sendError(
+        socket,
+        "controller_not_joined",
+        "Controller must join a room before sending motion."
+      );
+      return;
+    }
+
+    const room = this.rooms.get(socket.roomId);
+    if (!room || room.controllerClient !== socket) {
+      this.sendError(socket, "room_not_found", "Controller room was not found.");
+      return;
+    }
+
+    const acceleration = this.normalizeAcceleration(message.acceleration);
+    if (!acceleration) {
+      this.sendError(
+        socket,
+        "invalid_motion",
+        "Motion message must include numeric acceleration x, y, and z."
+      );
+      return;
+    }
+
+    const reportedMagnitude = Number(message.magnitude);
+    const magnitude = Number.isFinite(reportedMagnitude)
+      ? Math.max(0, reportedMagnitude)
+      : Math.sqrt(acceleration.x ** 2 + acceleration.y ** 2 + acceleration.z ** 2);
+    const now = Date.now();
+
+    room.packetCount += 1;
+    room.lastPacketAt = now;
+    room.lastActivityAt = now;
+
+    const sensor = {
+      preferredDevice: "phone-motion",
+      acceleration: {
+        device: "phone-motion",
+        x: acceleration.x,
+        y: acceleration.y,
+        z: acceleration.z,
+        magnitude
+      },
+      heartRate: null,
+      readings: [
+        {
+          device: "phone-motion",
+          kind: "accel",
+          axis: "x",
+          value: acceleration.x,
+          address: "/controller/accel/x"
+        },
+        {
+          device: "phone-motion",
+          kind: "accel",
+          axis: "y",
+          value: acceleration.y,
+          address: "/controller/accel/y"
+        },
+        {
+          device: "phone-motion",
+          kind: "accel",
+          axis: "z",
+          value: acceleration.z,
+          address: "/controller/accel/z"
+        }
+      ],
+      controller: {
+        seq: Number.isFinite(message.seq) ? message.seq : null,
+        sentAt: Number.isFinite(message.sentAt) ? message.sentAt : null,
+        orientation:
+          typeof message.orientation === "string" ? message.orientation : "",
+        permissionState:
+          typeof message.permissionState === "string"
+            ? message.permissionState
+            : ""
+      }
+    };
+
+    const payload = {
+      type: "sensor-data",
+      roomId: room.id,
+      mode: room.mode,
+      receivedAt: now,
+      packetCount: room.packetCount,
+      source: {
+        type: "device-motion",
+        connection: "controller"
+      },
+      raw: {
+        length: 0,
+        hex: "",
+        text: "browser DeviceMotion"
+      },
+      osc: {
+        ok: false,
+        error: null,
+        messages: []
+      },
+      sensor
+    };
+
+    if (room.hostClient?.readyState === WebSocket.OPEN) {
+      this.sendJson(room.hostClient, payload);
+    }
+  }
+
   normalizeMode(mode) {
     if (mode === "phone" || mode === "smartphone") {
       return "phone";
@@ -295,6 +447,10 @@ export class BridgeServer {
 
     if (mode === "watch" || mode === "apple-watch") {
       return "watch";
+    }
+
+    if (mode === "phone-motion" || mode === "smartphone-motion") {
+      return "phone-motion";
     }
 
     return null;
@@ -309,6 +465,32 @@ export class BridgeServer {
     const roomId = this.createRoomId();
     const token = crypto.randomBytes(18).toString("hex");
     let lastError = null;
+    const baseRoom = {
+      id: roomId,
+      token,
+      mode,
+      udpPort: null,
+      udpSocket: null,
+      hostClient: null,
+      controllerClient: null,
+      createdAt: Date.now(),
+      lastClientAt: Date.now(),
+      lastActivityAt: Date.now(),
+      lastPacketAt: null,
+      packetCount: 0,
+      sensorState: this.createSensorState(),
+      requestHost: request.headers.host ?? ""
+    };
+
+    if (!this.requiresUdpPort(mode)) {
+      this.rooms.set(baseRoom.id, baseRoom);
+      console.info("Room created.", {
+        roomId: baseRoom.id,
+        mode: baseRoom.mode,
+        udpPort: null
+      });
+      return baseRoom;
+    }
 
     for (
       let udpPort = this.config.udpPortStart;
@@ -320,19 +502,9 @@ export class BridgeServer {
       }
 
       const room = {
-        id: roomId,
-        token,
-        mode,
+        ...baseRoom,
         udpPort,
-        udpSocket: null,
-        client: null,
-        createdAt: Date.now(),
-        lastClientAt: Date.now(),
-        lastActivityAt: Date.now(),
-        lastPacketAt: null,
-        packetCount: 0,
-        sensorState: this.createSensorState(),
-        requestHost: request.headers.host ?? ""
+        udpSocket: null
       };
 
       try {
@@ -355,6 +527,10 @@ export class BridgeServer {
       `No UDP ports available in ${this.config.udpPortStart}-${this.config.udpPortEnd}. ` +
         (lastError ? `Last bind error: ${lastError.message}` : "")
     );
+  }
+
+  requiresUdpPort(mode) {
+    return mode === "phone" || mode === "watch";
   }
 
   createRoomId() {
@@ -428,32 +604,81 @@ export class BridgeServer {
     });
   }
 
-  attachClientToRoom(room, socket) {
-    if (room.client && room.client !== socket) {
-      room.client.close(4002, "Room reconnected from another socket");
+  attachHostToRoom(room, socket) {
+    if (room.hostClient && room.hostClient !== socket) {
+      room.hostClient.close(4002, "Room reconnected from another socket");
     }
 
-    room.client = socket;
+    room.hostClient = socket;
     room.lastClientAt = Date.now();
     room.lastActivityAt = Date.now();
     socket.roomId = room.id;
+    socket.role = "host";
 
-    console.info("WebSocket client attached to room.", {
+    console.info("WebSocket host attached to room.", {
       roomId: room.id,
       udpPort: room.udpPort,
       mode: room.mode
     });
   }
 
+  attachControllerToRoom(room, socket, request) {
+    if (room.controllerClient && room.controllerClient !== socket) {
+      this.sendJson(room.controllerClient, {
+        type: "controller-replaced",
+        roomId: room.id
+      });
+      room.controllerClient.close(4003, "Controller replaced");
+      this.sendJson(room.hostClient, {
+        type: "controller-replaced",
+        roomId: room.id,
+        replacedAt: Date.now()
+      });
+    }
+
+    room.controllerClient = socket;
+    room.lastActivityAt = Date.now();
+    socket.roomId = room.id;
+    socket.role = "controller";
+
+    this.sendJson(socket, {
+      type: "controller-joined",
+      room: this.getRoomPayload(room, request)
+    });
+    this.sendJson(room.hostClient, {
+      type: "controller-connected",
+      roomId: room.id,
+      connectedAt: Date.now()
+    });
+
+    console.info("Controller attached to room.", {
+      roomId: room.id,
+      mode: room.mode
+    });
+  }
+
   handleWebSocketClose(socket) {
     const room = socket.roomId ? this.rooms.get(socket.roomId) : null;
-    if (room && room.client === socket) {
-      room.client = null;
+    if (room && room.hostClient === socket) {
+      room.hostClient = null;
       room.lastClientAt = Date.now();
       room.lastActivityAt = Date.now();
-      console.info("WebSocket client disconnected from room.", {
+      console.info("WebSocket host disconnected from room.", {
         roomId: room.id,
         udpPort: room.udpPort
+      });
+    }
+
+    if (room && room.controllerClient === socket) {
+      room.controllerClient = null;
+      room.lastActivityAt = Date.now();
+      this.sendJson(room.hostClient, {
+        type: "controller-disconnected",
+        roomId: room.id,
+        disconnectedAt: Date.now()
+      });
+      console.info("Controller disconnected from room.", {
+        roomId: room.id
       });
     }
   }
@@ -500,8 +725,8 @@ export class BridgeServer {
       sensor
     };
 
-    if (room.client?.readyState === WebSocket.OPEN) {
-      this.sendJson(room.client, payload);
+    if (room.hostClient?.readyState === WebSocket.OPEN) {
+      this.sendJson(room.hostClient, payload);
       console.info("Message forwarded to room.", {
         roomId: room.id,
         udpPort: room.udpPort
@@ -773,6 +998,22 @@ export class BridgeServer {
     };
   }
 
+  normalizeAcceleration(acceleration) {
+    if (!acceleration || typeof acceleration !== "object") {
+      return null;
+    }
+
+    const x = Number(acceleration.x);
+    const y = Number(acceleration.y);
+    const z = Number(acceleration.z);
+
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
+      return null;
+    }
+
+    return { x, y, z };
+  }
+
   getRoomPayload(room, request) {
     return {
       roomId: room.id,
@@ -818,7 +1059,7 @@ export class BridgeServer {
   }
 
   sendJson(socket, payload) {
-    if (socket.readyState !== WebSocket.OPEN) {
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
       return false;
     }
 
@@ -846,7 +1087,10 @@ export class BridgeServer {
     const now = Date.now();
 
     for (const room of this.rooms.values()) {
-      if (!room.client && now - room.lastClientAt > this.config.noClientGraceMs) {
+      if (
+        !room.hostClient &&
+        now - room.lastClientAt > this.config.noClientGraceMs
+      ) {
         this.cleanupRoom(room.id, "client grace expired");
         continue;
       }
@@ -864,17 +1108,28 @@ export class BridgeServer {
     }
 
     this.closeUdpSocket(room);
-    if (room.client?.readyState === WebSocket.OPEN) {
-      this.sendJson(room.client, {
+    if (room.hostClient?.readyState === WebSocket.OPEN) {
+      this.sendJson(room.hostClient, {
         type: "room-closed",
         roomId: room.id,
         reason
       });
-      room.client.close(1000, reason);
+      room.hostClient.close(1000, reason);
+    }
+
+    if (room.controllerClient?.readyState === WebSocket.OPEN) {
+      this.sendJson(room.controllerClient, {
+        type: "room-closed",
+        roomId: room.id,
+        reason
+      });
+      room.controllerClient.close(1000, reason);
     }
 
     this.rooms.delete(room.id);
-    this.roomsByUdpPort.delete(room.udpPort);
+    if (room.udpPort !== null) {
+      this.roomsByUdpPort.delete(room.udpPort);
+    }
     console.info("Room cleaned up.", {
       roomId: room.id,
       udpPort: room.udpPort,

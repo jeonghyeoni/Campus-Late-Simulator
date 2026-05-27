@@ -12,6 +12,7 @@
   "dependencies": {
     "@rnbo/js": "^1.4.3",
     "osc": "^2.4.5",
+    "qrcode": "^1.5.4",
     "ws": "^8.21.0"
   },
   "devDependencies": {

@@ -76,6 +76,10 @@
             <span>Smartphone <small>TDInput</small></span>
           </label>
           <label class="input-mode-option">
+            <input type="radio" name="inputMode" value="phone-motion" />
+            <span>Smartphone <small>Motion</small></span>
+          </label>
+          <label class="input-mode-option">
             <input type="radio" name="inputMode" value="watch" />
             <span>Apple Watch <small>TDInput</small></span>
           </label>
@@ -89,12 +93,16 @@
           <div class="tdinput-grid">
             <span>Room ID</span>
             <strong id="tdInputRoomId">----</strong>
-            <span>Server IP / Hostname</span>
+            <span id="tdInputServerLabel">Server IP / Hostname</span>
             <strong id="tdInputServerHost">127.0.0.1</strong>
-            <span>UDP Port</span>
+            <span id="tdInputUdpLabel">UDP Port</span>
             <strong id="tdInputUdpPort">----</strong>
           </div>
-          <p>Enter this Server IP and UDP Port in TDInput.</p>
+          <div id="motionQrPanel" class="motion-qr-panel" hidden>
+            <canvas id="motionQrCanvas" aria-label="Smartphone controller QR code"></canvas>
+            <a id="motionControllerUrl" href="#" target="_blank" rel="noreferrer"></a>
+          </div>
+          <p id="tdInputInstructions">Enter this Server IP and UDP Port in TDInput.</p>
         </section>
 
         <label class="quality-picker" for="qualitySelect">

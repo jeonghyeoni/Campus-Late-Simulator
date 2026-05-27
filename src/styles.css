@@ -385,9 +385,9 @@ button {
 
 .input-mode-picker {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
-  width: min(560px, calc(100vw - 36px));
+  width: min(720px, calc(100vw - 36px));
   margin: 0;
   padding: 10px;
   border: 1px solid rgb(255 255 255 / 20%);
@@ -529,6 +529,40 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
+.motion-qr-panel {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgb(255 255 255 / 12%);
+}
+
+.motion-qr-panel[hidden] {
+  display: none;
+}
+
+.motion-qr-panel canvas {
+  width: 168px;
+  height: 168px;
+  border: 8px solid #f7fbfa;
+  border-radius: 7px;
+  background: #f7fbfa;
+  box-shadow: 0 18px 38px rgb(0 0 0 / 32%);
+}
+
+.motion-qr-panel a {
+  width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: rgb(247 251 250 / 70%);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  text-decoration: none;
+}
+
 .tdinput-panel p {
   margin: 13px 0 0;
   color: rgb(247 251 250 / 64%);
@@ -580,6 +614,124 @@ button {
   box-shadow: 0 18px 46px rgb(0 0 0 / 38%);
   cursor: pointer;
   backdrop-filter: blur(12px);
+}
+
+.controller-page {
+  min-height: 100svh;
+  padding:
+    max(22px, env(safe-area-inset-top))
+    max(18px, env(safe-area-inset-right))
+    max(22px, env(safe-area-inset-bottom))
+    max(18px, env(safe-area-inset-left));
+  color: #f7fbfa;
+  background:
+    radial-gradient(circle at 50% 0%, rgb(255 83 97 / 14%), transparent 42%),
+    #050607;
+}
+
+.controller-shell {
+  display: grid;
+  align-content: center;
+  gap: 18px;
+  width: min(430px, 100%);
+  min-height: calc(100svh - 44px);
+  margin: 0 auto;
+}
+
+.controller-kicker {
+  margin: 0;
+  color: rgb(247 251 250 / 58%);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08rem;
+  text-transform: uppercase;
+}
+
+.controller-shell h1 {
+  margin: 0;
+  color: #f7fbfa;
+  font-size: clamp(2.35rem, 12vw, 4rem);
+  font-weight: 300;
+  line-height: 0.95;
+}
+
+.controller-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 28px;
+  color: rgb(247 251 250 / 78%);
+  font-size: 0.94rem;
+  font-weight: 800;
+}
+
+.controller-dot {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #ffc454;
+  box-shadow: 0 0 15px rgb(255 196 84 / 36%);
+}
+
+.controller-dot[data-status="active"],
+.controller-dot[data-status="connected"] {
+  background: #77f2bc;
+  box-shadow: 0 0 18px rgb(119 242 188 / 36%);
+}
+
+.controller-dot[data-status="error"],
+.controller-dot[data-status="reconnecting"] {
+  background: #ff5361;
+  box-shadow: 0 0 18px rgb(255 83 97 / 36%);
+}
+
+.controller-button {
+  width: 100%;
+  min-height: 58px;
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: 8px;
+  color: #f7fbfa;
+  background: rgb(255 83 97 / 18%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 16%),
+    0 18px 42px rgb(0 0 0 / 32%);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.controller-button:disabled {
+  cursor: default;
+  opacity: 0.58;
+}
+
+.controller-debug {
+  display: grid;
+  grid-template-columns: minmax(92px, 1fr) minmax(0, 1fr);
+  gap: 10px 14px;
+  margin-top: 6px;
+  padding: 15px;
+  border: 1px solid rgb(255 255 255 / 15%);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 5%);
+}
+
+.controller-debug span {
+  color: rgb(247 251 250 / 55%);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.controller-debug strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #f7fbfa;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 900px) {
@@ -963,8 +1115,8 @@ button {
   }
 
   .input-mode-picker {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    width: min(520px, calc(100vw - 28px));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: min(620px, calc(100vw - 28px));
     padding: 8px;
   }
 

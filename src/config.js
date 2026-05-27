@@ -9,6 +9,9 @@ export const CONFIG = {
   viewMode: "flat",
   bridge: {
     wsUrl: import.meta.env.VITE_BRIDGE_WS_URL ?? defaultBridgeWsUrl,
+    controllerBaseUrl:
+      import.meta.env.VITE_CONTROLLER_BASE_URL ?? window.location.origin,
+    motionSendHz: 30,
     reconnectIntervalMs: 2000,
     statusHoldMs: 900,
     keyboardFallback: true

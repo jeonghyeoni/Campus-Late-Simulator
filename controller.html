@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Campus Late Controller</title>
+  </head>
+  <body>
+    <main class="controller-page" aria-label="Campus late motion controller">
+      <section class="controller-shell">
+        <p class="controller-kicker">Campus Late Simulator</p>
+        <h1>Move your phone to run</h1>
+        <div class="controller-status">
+          <span id="connectionDot" class="controller-dot" aria-hidden="true"></span>
+          <span id="connectionStatus">Connecting...</span>
+        </div>
+        <button id="enableMotionButton" class="controller-button" type="button">
+          Enable Motion
+        </button>
+        <div class="controller-debug" aria-label="Motion debug">
+          <span>Room</span>
+          <strong id="roomValue">----</strong>
+          <span>Magnitude</span>
+          <strong id="magnitudeValue">0.000</strong>
+          <span>Intensity</span>
+          <strong id="intensityValue">0.000</strong>
+          <span>Latency</span>
+          <strong id="latencyValue">-- ms</strong>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="/src/controller.js"></script>
+  </body>
+</html>

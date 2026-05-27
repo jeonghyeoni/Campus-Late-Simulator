@@ -556,17 +556,169 @@ export class TdInputRunInput {
   }
 }
 
+export class SmartphoneMotionRunInput extends TdInputRunInput {
+  constructor(config) {
+    super(config);
+    this.controllerConnected = false;
+    this.lastControllerConnectedAt = 0;
+    this.lastControllerDisconnectedAt = 0;
+  }
+
+  normalizeMode(mode) {
+    return mode === "phone-motion" || mode === "smartphone-motion"
+      ? "phone-motion"
+      : null;
+  }
+
+  handleMessage(data) {
+    let message = null;
+    try {
+      message = JSON.parse(data);
+    } catch (error) {
+      console.warn("Bridge message was not JSON.", error);
+      return;
+    }
+
+    if (message.type === "room-created" || message.type === "room-resumed") {
+      this.room = message.room;
+      this.status = "waiting-controller";
+      this.controllerConnected = false;
+      this.saveRoom();
+      return;
+    }
+
+    if (message.type === "controller-connected") {
+      this.controllerConnected = true;
+      this.lastControllerConnectedAt = Date.now();
+      if (this.status !== "receiving") {
+        this.status = "controller-connected";
+      }
+      return;
+    }
+
+    if (message.type === "controller-disconnected") {
+      this.controllerConnected = false;
+      this.lastControllerDisconnectedAt = Date.now();
+      if (this.status !== "reconnecting") {
+        this.status = "waiting-controller";
+      }
+      return;
+    }
+
+    if (message.type === "controller-replaced") {
+      this.controllerConnected = false;
+      this.status = "waiting-controller";
+      return;
+    }
+
+    if (message.type === "sensor-data") {
+      this.controllerConnected = true;
+      this.updateFromSensorMessage(message);
+      return;
+    }
+
+    if (message.type === "room-closed") {
+      this.controllerConnected = false;
+      this.clearSavedRoom(this.mode);
+      this.room = null;
+      this.status = "reconnecting";
+      return;
+    }
+
+    if (message.type === "error") {
+      this.handleBridgeError(message);
+    }
+  }
+
+  update(deltaSeconds) {
+    super.update(deltaSeconds);
+
+    if (this.status === "waiting" && this.mode === "phone-motion") {
+      this.status = this.controllerConnected
+        ? "controller-connected"
+        : "waiting-controller";
+    }
+  }
+
+  getRunPromptMessage() {
+    if (this.status === "reconnecting" || this.status === "disconnected") {
+      return "reconnecting phone controller...";
+    }
+
+    if (!this.controllerConnected) {
+      return "scan QR with phone";
+    }
+
+    return "move phone to run";
+  }
+
+  getStatusText() {
+    if (this.status === "receiving") {
+      return "Receiving motion data";
+    }
+
+    if (this.status === "controller-connected") {
+      return "Phone connected";
+    }
+
+    if (this.status === "waiting-controller" || this.status === "waiting") {
+      return "Waiting for phone connection...";
+    }
+
+    if (this.status === "connected" || this.status === "connecting") {
+      return "Creating motion room...";
+    }
+
+    if (this.status === "reconnecting" || this.status === "disconnected") {
+      return "Disconnected / Reconnecting";
+    }
+
+    if (this.status === "error") {
+      return this.lastError || "Connection failed";
+    }
+
+    return "Select Smartphone Motion";
+  }
+
+  getConnectionSnapshot() {
+    const snapshot = super.getConnectionSnapshot();
+    return {
+      ...snapshot,
+      controllerConnected: this.controllerConnected,
+      controllerUrl: this.getControllerUrl(snapshot.roomId),
+      lastControllerConnectedAt: this.lastControllerConnectedAt,
+      lastControllerDisconnectedAt: this.lastControllerDisconnectedAt
+    };
+  }
+
+  getControllerUrl(roomId) {
+    if (!roomId) {
+      return "";
+    }
+
+    const baseUrl =
+      this.config.bridge.controllerBaseUrl || window.location.origin;
+    return `${baseUrl.replace(/\/$/, "")}/controller?room=${encodeURIComponent(
+      roomId
+    )}`;
+  }
+}
+
 export class RunInputManager {
-  constructor(config, keyboardInput, tdInput) {
+  constructor(config, keyboardInput, tdInput, motionInput) {
     this.config = config;
     this.keyboardInput = keyboardInput;
     this.tdInput = tdInput;
+    this.motionInput = motionInput;
     this.mode = "keyboard";
     this.runIntensity = 0;
   }
 
   setMode(mode) {
-    const nextMode = mode === "phone" || mode === "watch" ? mode : "keyboard";
+    const nextMode =
+      mode === "phone" || mode === "watch" || mode === "phone-motion"
+        ? mode
+        : "keyboard";
     if (this.mode === nextMode) {
       return;
     }
@@ -576,15 +728,24 @@ export class RunInputManager {
 
     if (this.mode === "keyboard") {
       this.tdInput.disconnect({ release: true });
+      this.motionInput.disconnect({ release: true });
       return;
     }
 
+    if (this.mode === "phone-motion") {
+      this.tdInput.disconnect({ release: true });
+      this.motionInput.setMode(this.mode);
+      return;
+    }
+
+    this.motionInput.disconnect({ release: true });
     this.tdInput.setMode(this.mode);
   }
 
   update(deltaSeconds) {
     this.keyboardInput.update(deltaSeconds);
     this.tdInput.update(deltaSeconds);
+    this.motionInput.update(deltaSeconds);
 
     if (this.mode === "keyboard") {
       this.runIntensity = this.keyboardInput.getRunIntensity();
@@ -594,8 +755,10 @@ export class RunInputManager {
     const fallbackIntensity = this.config.bridge.keyboardFallback
       ? this.keyboardInput.getRunIntensity()
       : 0;
+    const activeSensorInput =
+      this.mode === "phone-motion" ? this.motionInput : this.tdInput;
     this.runIntensity = Math.max(
-      this.tdInput.getRunIntensity(),
+      activeSensorInput.getRunIntensity(),
       fallbackIntensity
     );
   }
@@ -610,7 +773,9 @@ export class RunInputManager {
     }
 
     return (
-      this.tdInput.isActive() ||
+      (this.mode === "phone-motion"
+        ? this.motionInput.isActive()
+        : this.tdInput.isActive()) ||
       (this.config.bridge.keyboardFallback && this.keyboardInput.isActive())
     );
   }
@@ -623,7 +788,11 @@ export class RunInputManager {
       return;
     }
 
-    this.tdInput.reset();
+    if (this.mode === "phone-motion") {
+      this.motionInput.reset();
+    } else {
+      this.tdInput.reset();
+    }
 
     if (this.config.bridge.keyboardFallback) {
       this.keyboardInput.reset();
@@ -635,7 +804,9 @@ export class RunInputManager {
       return this.keyboardInput.getRunPromptMessage();
     }
 
-    return this.tdInput.getRunPromptMessage();
+    return this.mode === "phone-motion"
+      ? this.motionInput.getRunPromptMessage()
+      : this.tdInput.getRunPromptMessage();
   }
 
   prefersTouch() {
@@ -643,7 +814,9 @@ export class RunInputManager {
       return this.keyboardInput.prefersTouch();
     }
 
-    return this.tdInput.prefersTouch();
+    return this.mode === "phone-motion"
+      ? this.motionInput.prefersTouch()
+      : this.tdInput.prefersTouch();
   }
 
   getMode() {
@@ -651,6 +824,8 @@ export class RunInputManager {
   }
 
   getConnectionSnapshot() {
-    return this.tdInput.getConnectionSnapshot();
+    return this.mode === "phone-motion"
+      ? this.motionInput.getConnectionSnapshot()
+      : this.tdInput.getConnectionSnapshot();
   }
 }

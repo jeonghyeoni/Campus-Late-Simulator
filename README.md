@@ -15,7 +15,7 @@ TDInput app
   -> RNBO parameters
 ```
 
-The browser cannot receive UDP directly, so the Node bridge owns UDP. Each TDInput session gets one room and one UDP port. UDP packets are forwarded only to that room's WebSocket client, never broadcast to every browser.
+The browser cannot receive UDP directly, so the Node bridge owns UDP for TDInput. Each TDInput session gets one room and one UDP port. Smartphone Motion uses the same room system without UDP: the phone browser joins the room over WSS and sends DeviceMotion samples only to that room's PC browser. Sensor packets are never broadcast to every browser.
 
 ## Local Development
 
@@ -43,7 +43,13 @@ Local defaults:
 - UDP ports: `8001-8050`
 - Health check: `http://127.0.0.1:8080/health`
 
-Open the app, choose `Smartphone (TDInput)` or `Apple Watch (TDInput)`, then use the displayed Room ID, Server IP / Hostname, and UDP Port. For local testing on the same machine, the server host is usually `127.0.0.1`. For a phone or watch on the same LAN, use the computer's LAN IP instead.
+Open the app and choose one input mode:
+
+- `Keyboard (Spacebar)` uses the keyboard.
+- `Smartphone (TDInput)` and `Apple Watch (TDInput)` show the TDInput room, host, and UDP port.
+- `Smartphone Motion` shows a QR code for the browser controller.
+
+For local Smartphone Motion testing from a real phone, set `VITE_CONTROLLER_BASE_URL` to a URL the phone can reach, such as your LAN IP or a tunnel URL.
 
 ## Bridge Configuration
 
@@ -63,6 +69,7 @@ Frontend environment variable:
 
 ```sh
 VITE_BRIDGE_WS_URL=ws://your.vps.ip.or.hostname:8080
+VITE_CONTROLLER_BASE_URL=https://your-pages-site.pages.dev
 ```
 
 For HTTPS frontends such as Cloudflare Pages, use WSS. The app defaults to the local bridge on localhost and to the production WSS bridge on deployed hosts:
@@ -158,12 +165,42 @@ Oracle Cloud also requires matching ingress rules in the VCN security list or ne
 
 The bridge logs raw UDP packet text/hex and parsed OSC values. Expected TDInput OSC channels include `/phone/accel/x`, `/phone/accel/y`, `/phone/accel/z`, `/watch/accel/x`, `/watch/accel/y`, `/watch/accel/z`, and `/watch/heart/bpm`.
 
+## Smartphone Motion Setup
+
+Smartphone Motion does not need TDInput or any app install.
+
+1. Open the deployed web app on the PC.
+2. Select `Smartphone Motion`.
+3. Scan the QR code with the phone.
+4. On the controller page, tap `Enable Motion`.
+5. Allow motion sensor access if the browser asks.
+6. Move the phone to run.
+
+The QR URL uses this shape:
+
+```text
+https://<frontend-domain>/controller?room=4821
+```
+
+iPhone notes:
+
+- Use Safari or another browser that supports DeviceMotion.
+- Motion permission must be granted from the `Enable Motion` tap.
+- If the browser never asks, check iOS Settings for Motion & Orientation Access.
+
+Android notes:
+
+- Chrome usually starts DeviceMotion after the `Enable Motion` tap.
+- Keep the controller tab visible. The page requests Screen Wake Lock when available, but some browsers still throttle background tabs.
+
+The controller debug panel shows magnitude, local smoothed intensity, and WebSocket latency. The PC browser performs the final run intensity smoothing before updating heart rate and RNBO parameters.
+
 ## Multi-user Test
 
 1. Open the web app in two browsers or devices.
-2. Select a TDInput mode in each browser.
-3. Confirm each browser receives a different UDP Port.
-4. Configure phone A to browser A's UDP Port, and phone B to browser B's UDP Port.
+2. Select a TDInput mode or `Smartphone Motion` in each browser.
+3. For TDInput, confirm each browser receives a different UDP Port.
+4. For Smartphone Motion, scan each browser's QR code with a different phone.
 5. Move phone A and confirm only browser A changes run intensity.
 6. Move phone B and confirm only browser B changes run intensity.
 
