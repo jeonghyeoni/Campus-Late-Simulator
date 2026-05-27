@@ -5,11 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
+    "bridge": "node server/bridge.js",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {
-    "@rnbo/js": "^1.4.3"
+    "@rnbo/js": "^1.4.3",
+    "osc": "^2.4.5",
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "vite": "^7.0.0"

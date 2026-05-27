@@ -1,6 +1,6 @@
 import "./styles.css";
 import { CONFIG } from "./config.js";
-import { KeyboardRunInput } from "./input.js";
+import { KeyboardRunInput, RunInputManager, TdInputRunInput } from "./input.js";
 import { SimulationState } from "./state.js";
 import { OverlayUi } from "./ui.js";
 import { VideoScene } from "./videoScene.js";
@@ -10,8 +10,16 @@ const sceneContainer = document.querySelector("#scene");
 const startButton = document.querySelector("#startButton");
 const startPanel = document.querySelector("#startPanel");
 const qualitySelect = document.querySelector("#qualitySelect");
+const inputModeControls = document.querySelectorAll("input[name='inputMode']");
+const tdInputConnection = document.querySelector("#tdInputConnection");
+const tdInputStatus = document.querySelector("#tdInputStatus");
+const tdInputRoomId = document.querySelector("#tdInputRoomId");
+const tdInputServerHost = document.querySelector("#tdInputServerHost");
+const tdInputUdpPort = document.querySelector("#tdInputUdpPort");
 
-const inputSource = new KeyboardRunInput(CONFIG, sceneContainer);
+const keyboardInput = new KeyboardRunInput(CONFIG, sceneContainer);
+const tdInput = new TdInputRunInput(CONFIG);
+const inputSource = new RunInputManager(CONFIG, keyboardInput, tdInput);
 const simulationState = new SimulationState(CONFIG, inputSource);
 const videoScene = new VideoScene(sceneContainer, CONFIG);
 const overlayUi = new OverlayUi(CONFIG);
@@ -23,6 +31,7 @@ let started = false;
 window.campusLateSimulator = {
   getState: () => simulationState.getSnapshot(),
   getInputSource: () => inputSource,
+  getTdInput: () => tdInput,
   getAudioEngine: () => audioEngine
 };
 
@@ -52,6 +61,7 @@ function tick(now) {
   videoScene.update(deltaSeconds, snapshot);
   audioEngine.updateFromSnapshot(snapshot);
   overlayUi.render(snapshot);
+  renderTdInputConnection();
 
   window.dispatchEvent(
     new CustomEvent("campus-simulator-state", {
@@ -60,6 +70,33 @@ function tick(now) {
   );
 
   requestAnimationFrame(tick);
+}
+
+function renderTdInputConnection() {
+  const mode = inputSource.getMode();
+  const sensorMode = mode === "phone" || mode === "watch";
+  tdInputConnection.hidden = !sensorMode;
+  startPanel.dataset.inputMode = mode;
+
+  if (!sensorMode) {
+    return;
+  }
+
+  const connection = inputSource.getConnectionSnapshot();
+  tdInputConnection.dataset.status = connection.status;
+  tdInputStatus.textContent = connection.statusText;
+  tdInputRoomId.textContent = connection.roomId || "----";
+  tdInputServerHost.textContent =
+    connection.serverHost || getHostFromWebSocketUrl(CONFIG.bridge.wsUrl);
+  tdInputUdpPort.textContent = connection.udpPort || "----";
+}
+
+function getHostFromWebSocketUrl(url) {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "127.0.0.1";
+  }
 }
 
 async function startExperience() {
@@ -83,6 +120,17 @@ qualitySelect.addEventListener("change", () => {
   }
 
   videoScene.setSource(qualitySelect.value);
+});
+
+inputModeControls.forEach((control) => {
+  control.addEventListener("change", () => {
+    if (!control.checked) {
+      return;
+    }
+
+    inputSource.setMode(control.value);
+    renderTdInputConnection();
+  });
 });
 
 startButton.addEventListener("click", startExperience);

@@ -1,5 +1,29 @@
+const isLocalBridgeHost =
+  ["localhost", "127.0.0.1", ""].includes(window.location.hostname) ||
+  window.location.hostname.endsWith(".local");
+const defaultBridgeWsUrl = isLocalBridgeHost
+  ? "ws://127.0.0.1:8080"
+  : "wss://168.110.110.59.sslip.io";
+
 export const CONFIG = {
   viewMode: "flat",
+  bridge: {
+    wsUrl: import.meta.env.VITE_BRIDGE_WS_URL ?? defaultBridgeWsUrl,
+    reconnectIntervalMs: 2000,
+    statusHoldMs: 900,
+    keyboardFallback: true
+  },
+  sensorInput: {
+    deadzone: 0.08,
+    fullScale: 1.4,
+    jerkDeadzone: 0.04,
+    jerkFullScale: 0.65,
+    baselineSmoothing: 0.03,
+    intensityRiseSmoothing: 10,
+    intensityFallSmoothing: 4,
+    staleAfterMs: 650,
+    runningThreshold: 0.08
+  },
   video: {
     src: "https://pub-2d2d0dec4ce24f1cb3dce6e41e9a12a7.r2.dev/campuslatesimulatorsource.mp4",
     sources: [

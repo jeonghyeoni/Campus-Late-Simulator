@@ -65,6 +65,38 @@
       <div id="messageOverlay" class="message-overlay" aria-live="polite"></div>
 
       <div id="startPanel" class="start-panel">
+        <fieldset class="input-mode-picker" aria-label="Running input mode">
+          <legend>input</legend>
+          <label class="input-mode-option">
+            <input type="radio" name="inputMode" value="keyboard" checked />
+            <span>Keyboard <small>Spacebar</small></span>
+          </label>
+          <label class="input-mode-option">
+            <input type="radio" name="inputMode" value="phone" />
+            <span>Smartphone <small>TDInput</small></span>
+          </label>
+          <label class="input-mode-option">
+            <input type="radio" name="inputMode" value="watch" />
+            <span>Apple Watch <small>TDInput</small></span>
+          </label>
+        </fieldset>
+
+        <section id="tdInputConnection" class="tdinput-panel" aria-live="polite" hidden>
+          <div class="tdinput-status-row">
+            <span class="tdinput-dot" aria-hidden="true"></span>
+            <span id="tdInputStatus">Waiting for TDInput data...</span>
+          </div>
+          <div class="tdinput-grid">
+            <span>Room ID</span>
+            <strong id="tdInputRoomId">----</strong>
+            <span>Server IP / Hostname</span>
+            <strong id="tdInputServerHost">127.0.0.1</strong>
+            <span>UDP Port</span>
+            <strong id="tdInputUdpPort">----</strong>
+          </div>
+          <p>Enter this Server IP and UDP Port in TDInput.</p>
+        </section>
+
         <label class="quality-picker" for="qualitySelect">
           <span>quality</span>
           <select id="qualitySelect" aria-label="Video quality"></select>
