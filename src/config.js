@@ -58,7 +58,14 @@ export const CONFIG = {
       }
     ],
     crossOrigin: null,
-    muted: true
+    muted: true,
+    stallRecovery: {
+      enabled: true,
+      stalledAfterMs: 900,
+      cooldownMs: 1200,
+      minProgressSeconds: 0.025,
+      seekNudgeSeconds: 0.045
+    }
   },
   audio: {
     enabled: true,

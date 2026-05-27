@@ -9,6 +9,9 @@ export class VideoScene {
     this.currentOffsetX = 0;
     this.currentOffsetY = 0;
     this.lastAppliedPlaybackSpeed = null;
+    this.lastObservedVideoTime = 0;
+    this.lastVideoProgressAt = performance.now();
+    this.lastStallRecoveryAt = 0;
 
     this.video = this.createVideoElement();
     this.video.className = "scene-video";
@@ -47,6 +50,7 @@ export class VideoScene {
     this.video.src = src;
     this.video.load();
     this.lastAppliedPlaybackSpeed = null;
+    this.resetStallTracking();
   }
 
   bindPointerControls() {
@@ -79,6 +83,7 @@ export class VideoScene {
   }
 
   async play() {
+    this.resetStallTracking();
     return this.video.play();
   }
 
@@ -97,6 +102,7 @@ export class VideoScene {
     this.currentOffsetY = 0;
     this.video.playbackRate = this.config.run.idleSpeed;
     this.lastAppliedPlaybackSpeed = this.config.run.idleSpeed;
+    this.resetStallTracking();
     this.updateTransform();
   }
 
@@ -121,6 +127,76 @@ export class VideoScene {
     this.currentOffsetX = lerp(this.currentOffsetX, this.targetOffsetX, amount);
     this.currentOffsetY = lerp(this.currentOffsetY, this.targetOffsetY, amount);
     this.updateTransform(snapshot);
+    this.recoverPlaybackStall(snapshot);
+  }
+
+  resetStallTracking() {
+    this.lastObservedVideoTime = this.video.currentTime || 0;
+    this.lastVideoProgressAt = performance.now();
+    this.lastStallRecoveryAt = 0;
+  }
+
+  recoverPlaybackStall(snapshot) {
+    const recovery = this.config.video.stallRecovery;
+
+    if (!recovery?.enabled) {
+      return;
+    }
+
+    const now = performance.now();
+    const currentTime = this.video.currentTime || 0;
+    const progressed =
+      Math.abs(currentTime - this.lastObservedVideoTime) >=
+      recovery.minProgressSeconds;
+
+    if (progressed) {
+      this.lastObservedVideoTime = currentTime;
+      this.lastVideoProgressAt = now;
+      return;
+    }
+
+    if (this.video.paused || this.video.ended || snapshot?.outcome) {
+      this.lastObservedVideoTime = currentTime;
+      this.lastVideoProgressAt = now;
+      return;
+    }
+
+    const stalledLongEnough =
+      now - this.lastVideoProgressAt >= recovery.stalledAfterMs;
+    const recoveryCooledDown =
+      now - this.lastStallRecoveryAt >= recovery.cooldownMs;
+
+    if (!stalledLongEnough || !recoveryCooledDown) {
+      return;
+    }
+
+    this.lastStallRecoveryAt = now;
+    this.lastAppliedPlaybackSpeed = null;
+
+    this.video.play().catch((error) => {
+      console.warn("Unable to resume stalled video playback.", error);
+    });
+
+    if (!Number.isFinite(this.video.duration)) {
+      return;
+    }
+
+    const maxTime = Math.max(0, this.video.duration - recovery.seekNudgeSeconds);
+    const nudgedTime = clamp(
+      currentTime + recovery.seekNudgeSeconds,
+      0,
+      maxTime
+    );
+
+    if (nudgedTime > currentTime) {
+      try {
+        this.video.currentTime = nudgedTime;
+        this.lastObservedVideoTime = nudgedTime;
+        this.lastVideoProgressAt = now;
+      } catch (error) {
+        console.warn("Unable to nudge stalled video playback.", error);
+      }
+    }
   }
 
   updateTransform(snapshot) {
