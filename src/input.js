@@ -696,16 +696,31 @@ export class SmartphoneMotionRunInput extends TdInputRunInput {
       return "";
     }
 
-    const baseUrl =
+    const configuredBaseUrl =
       this.config.bridge.controllerBaseUrl || window.location.origin;
-    const normalizedBaseUrl = baseUrl.replace(/\/$/, "");
-    const controllerPath = normalizedBaseUrl.endsWith("/controller.html")
-      ? normalizedBaseUrl
-      : normalizedBaseUrl.endsWith("/controller")
-        ? `${normalizedBaseUrl}.html`
-        : `${normalizedBaseUrl}/controller.html`;
 
-    return `${controllerPath}?room=${encodeURIComponent(roomId)}`;
+    let controllerUrl;
+
+    try {
+      const baseUrl = new URL(configuredBaseUrl, window.location.origin);
+      baseUrl.search = "";
+      baseUrl.hash = "";
+
+      if (
+        baseUrl.pathname === "/controller" ||
+        baseUrl.pathname === "/controller/" ||
+        baseUrl.pathname === "/controller.html"
+      ) {
+        baseUrl.pathname = "/";
+      }
+
+      controllerUrl = new URL("controller.html", baseUrl);
+    } catch {
+      controllerUrl = new URL("controller.html", window.location.origin);
+    }
+
+    controllerUrl.searchParams.set("room", roomId);
+    return controllerUrl.toString();
   }
 }
 

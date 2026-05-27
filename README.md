@@ -49,7 +49,7 @@ Open the app and choose one input mode:
 - `Smartphone (TDInput)` and `Apple Watch (TDInput)` show the TDInput room, host, and UDP port.
 - `Smartphone Motion` shows a QR code for the browser controller.
 
-For local Smartphone Motion testing from a real phone, set `VITE_CONTROLLER_BASE_URL` to a URL the phone can reach, such as your LAN IP or a tunnel URL.
+For local Smartphone Motion testing from a real phone, set `VITE_CONTROLLER_BASE_URL` to the app origin the phone can reach, such as your LAN IP or a tunnel URL. The QR code always points directly at `controller.html` to avoid redirect loops on mobile Safari.
 
 ## Bridge Configuration
 
@@ -181,6 +181,8 @@ The QR URL uses this shape:
 ```text
 https://<frontend-domain>/controller.html?room=4821
 ```
+
+Use the exact URL shown below the QR code if the camera app has cached an older scan. The controller route intentionally uses `controller.html` directly, with no `/controller` redirect.
 
 iPhone notes:
 
