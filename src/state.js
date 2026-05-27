@@ -19,6 +19,9 @@ export class SimulationState {
     this.distanceMeters = this.config.distance.startMeters;
     this.videoTime = 0;
     this.runUnlocked = false;
+    this.quietCorridorActive = false;
+    this.previousQuietCorridorActive = false;
+    this.quietCorridorExitMessageSeconds = 0;
     this.overloadActive = false;
     this.overloadElapsedSeconds = 0;
     this.endingEffect = {
@@ -35,6 +38,7 @@ export class SimulationState {
     this.inputSource.update(deltaSeconds);
     this.videoTime = video?.currentTime ?? 0;
     this.runUnlocked = this.isRunUnlocked(video);
+    this.updateQuietCorridor(deltaSeconds);
     if (!this.runUnlocked) {
       this.inputSource.reset?.();
     }
@@ -46,7 +50,10 @@ export class SimulationState {
     const requestedRunIntensity = this.runUnlocked
       ? this.inputSource.getRunIntensity()
       : 0;
-    this.runIntensity = this.isOverloaded() ? 0 : requestedRunIntensity;
+    this.runIntensity =
+      this.isOverloaded() || this.shouldBlockRunning()
+        ? 0
+        : requestedRunIntensity;
     this.isRunning = this.runIntensity > this.config.run.runningThreshold;
 
     this.updateHeartRate(deltaSeconds);
@@ -56,6 +63,25 @@ export class SimulationState {
     this.elapsedClockSeconds += deltaSeconds;
     this.updateOutcome(video);
     this.updateMessage(rawInputActive);
+  }
+
+  updateQuietCorridor(deltaSeconds) {
+    this.previousQuietCorridorActive = this.quietCorridorActive;
+    this.quietCorridorActive = this.isQuietCorridorActive();
+
+    if (
+      this.previousQuietCorridorActive &&
+      !this.quietCorridorActive &&
+      this.runUnlocked
+    ) {
+      this.quietCorridorExitMessageSeconds =
+        this.config.quietCorridor.exitMessageDurationSeconds;
+    } else if (this.quietCorridorExitMessageSeconds > 0) {
+      this.quietCorridorExitMessageSeconds = Math.max(
+        0,
+        this.quietCorridorExitMessageSeconds - deltaSeconds
+      );
+    }
   }
 
   updateOverloadElapsed(deltaSeconds) {
@@ -260,6 +286,16 @@ export class SimulationState {
       return;
     }
 
+    if (this.shouldBlockRunning() && rawInputActive) {
+      this.message = this.config.quietCorridor.blockedMessage;
+      return;
+    }
+
+    if (this.quietCorridorExitMessageSeconds > 0) {
+      this.message = this.config.quietCorridor.exitMessage;
+      return;
+    }
+
     if (this.shouldShowRunPrompt()) {
       this.message =
         this.inputSource.getRunPromptMessage?.() ?? "hold space to run";
@@ -276,6 +312,18 @@ export class SimulationState {
   isSensorInputMode() {
     const mode = this.inputSource.getMode?.();
     return mode === "phone" || mode === "watch" || mode === "phone-motion";
+  }
+
+  isQuietCorridorActive() {
+    const corridor = this.config.quietCorridor;
+    return (
+      this.videoTime >= corridor.startSeconds &&
+      this.videoTime < corridor.endSeconds
+    );
+  }
+
+  shouldBlockRunning() {
+    return this.runUnlocked && this.quietCorridorActive;
   }
 
   isRunUnlocked(video) {
@@ -323,6 +371,10 @@ export class SimulationState {
       distanceMeters: this.distanceMeters,
       videoTime: this.videoTime,
       runUnlocked: this.runUnlocked,
+      quietCorridor: {
+        active: this.quietCorridorActive,
+        blocksRunning: this.shouldBlockRunning()
+      },
       overload: {
         active: this.isOverloaded(),
         recoveryThresholdBpm: this.config.heart.overloadRecoveryThresholdBpm,

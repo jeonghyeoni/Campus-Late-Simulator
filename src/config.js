@@ -92,6 +92,13 @@ export const CONFIG = {
     intensityFallPerSecond: 0.9,
     runningThreshold: 0.08
   },
+  quietCorridor: {
+    startSeconds: 240,
+    endSeconds: 273,
+    blockedMessage: "quiet in the corridor.",
+    exitMessage: "you can run now.",
+    exitMessageDurationSeconds: 3
+  },
   heart: {
     baseBpm: 80,
     maxBpm: 176,
