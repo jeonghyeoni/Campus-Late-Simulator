@@ -106,9 +106,9 @@ export class SimulationState {
       this.targetPlaybackSpeed = this.config.run.idleSpeed;
     } else {
       this.targetPlaybackSpeed =
-      this.config.run.idleSpeed +
-      (this.getCurrentMaxRunSpeed() - this.config.run.idleSpeed) *
-        this.runIntensity;
+        this.config.run.idleSpeed +
+        (this.getCurrentMaxRunSpeed() - this.config.run.idleSpeed) *
+          this.getPlaybackRunIntensity();
     }
 
     const amount = expSmoothingFactor(
@@ -130,6 +130,14 @@ export class SimulationState {
     return this.targetPlaybackSpeed >= this.playbackSpeed
       ? this.config.run.sensorPlaybackRiseSmoothing
       : this.config.run.sensorPlaybackFallSmoothing;
+  }
+
+  getPlaybackRunIntensity() {
+    if (this.isSensorInputMode()) {
+      return clamp(this.inputSource.getPlaybackRunIntensity?.() ?? 0, 0, 1);
+    }
+
+    return this.runIntensity;
   }
 
   updateHeartRate(deltaSeconds) {

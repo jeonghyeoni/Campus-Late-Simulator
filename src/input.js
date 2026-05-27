@@ -74,6 +74,10 @@ export class KeyboardRunInput {
     return this.runIntensity;
   }
 
+  getPlaybackRunIntensity() {
+    return this.runIntensity;
+  }
+
   isActive() {
     return this.spacePressed || this.touchPressed;
   }
@@ -395,6 +399,10 @@ export class TdInputRunInput {
 
   getRunIntensity() {
     return this.runIntensity;
+  }
+
+  getPlaybackRunIntensity() {
+    return this.targetRunIntensity;
   }
 
   isActive() {
@@ -869,6 +877,22 @@ export class RunInputManager {
 
   getRunIntensity() {
     return this.runIntensity;
+  }
+
+  getPlaybackRunIntensity() {
+    if (this.mode === "keyboard") {
+      return this.keyboardInput.getPlaybackRunIntensity();
+    }
+
+    const fallbackIntensity = this.config.bridge.keyboardFallback
+      ? this.keyboardInput.getPlaybackRunIntensity()
+      : 0;
+    const activeSensorInput =
+      this.mode === "phone-motion" ? this.motionInput : this.tdInput;
+    return Math.max(
+      activeSensorInput.getPlaybackRunIntensity(),
+      fallbackIntensity
+    );
   }
 
   isActive() {
