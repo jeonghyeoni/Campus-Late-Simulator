@@ -14,6 +14,7 @@ export class SimulationState {
     this.isRunning = false;
     this.playbackSpeed = this.config.run.idleSpeed;
     this.targetPlaybackSpeed = this.config.run.idleSpeed;
+    this.sensorPlaybackSampleAccumulator = 0;
     this.heartRate = this.config.heart.baseBpm;
     this.heartSampleAccumulator = 0;
     this.distanceMeters = this.config.distance.startMeters;
@@ -114,7 +115,7 @@ export class SimulationState {
     }
 
     if (this.isSensorInputMode()) {
-      this.playbackSpeed = this.targetPlaybackSpeed;
+      this.updateSensorPlaybackSample(deltaSeconds);
       return;
     }
 
@@ -127,6 +128,20 @@ export class SimulationState {
       this.targetPlaybackSpeed,
       amount
     );
+  }
+
+  updateSensorPlaybackSample(deltaSeconds) {
+    const sampleHz = this.config.run.sensorPlaybackSampleHz ?? 20;
+    const sampleIntervalSeconds = 1 / Math.max(sampleHz, 1);
+
+    this.sensorPlaybackSampleAccumulator += deltaSeconds;
+
+    if (this.sensorPlaybackSampleAccumulator < sampleIntervalSeconds) {
+      return;
+    }
+
+    this.sensorPlaybackSampleAccumulator = 0;
+    this.playbackSpeed = this.targetPlaybackSpeed;
   }
 
   getPlaybackSmoothing() {

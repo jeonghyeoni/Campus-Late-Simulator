@@ -94,6 +94,7 @@ export const CONFIG = {
     playbackSmoothing: 4,
     sensorPlaybackRiseSmoothing: 8,
     sensorPlaybackFallSmoothing: 56,
+    sensorPlaybackSampleHz: 20,
     unlockVideoTimeSeconds: 16,
     promptDurationSeconds: 4,
     intensityRisePerSecond: 1.35,
