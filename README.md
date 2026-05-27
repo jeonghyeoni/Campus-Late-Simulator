@@ -179,7 +179,7 @@ Smartphone Motion does not need TDInput or any app install.
 The QR URL uses this shape:
 
 ```text
-https://<frontend-domain>/controller?room=4821
+https://<frontend-domain>/controller.html?room=4821
 ```
 
 iPhone notes:

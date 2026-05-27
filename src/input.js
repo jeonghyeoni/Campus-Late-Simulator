@@ -698,9 +698,14 @@ export class SmartphoneMotionRunInput extends TdInputRunInput {
 
     const baseUrl =
       this.config.bridge.controllerBaseUrl || window.location.origin;
-    return `${baseUrl.replace(/\/$/, "")}/controller?room=${encodeURIComponent(
-      roomId
-    )}`;
+    const normalizedBaseUrl = baseUrl.replace(/\/$/, "");
+    const controllerPath = normalizedBaseUrl.endsWith("/controller.html")
+      ? normalizedBaseUrl
+      : normalizedBaseUrl.endsWith("/controller")
+        ? `${normalizedBaseUrl}.html`
+        : `${normalizedBaseUrl}/controller.html`;
+
+    return `${controllerPath}?room=${encodeURIComponent(roomId)}`;
   }
 }
 
