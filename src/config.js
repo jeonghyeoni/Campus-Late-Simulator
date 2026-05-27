@@ -59,6 +59,8 @@ export const CONFIG = {
     ],
     crossOrigin: null,
     muted: true,
+    playbackRateUpdateHz: 20,
+    playbackRateMinDelta: 0.015,
     stallRecovery: {
       enabled: true,
       stalledAfterMs: 900,

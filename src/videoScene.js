@@ -9,6 +9,8 @@ export class VideoScene {
     this.currentOffsetX = 0;
     this.currentOffsetY = 0;
     this.lastAppliedPlaybackSpeed = null;
+    this.pendingPlaybackSpeed = null;
+    this.lastPlaybackRateUpdateAt = 0;
     this.lastObservedVideoTime = 0;
     this.lastVideoProgressAt = performance.now();
     this.lastStallRecoveryAt = 0;
@@ -50,6 +52,8 @@ export class VideoScene {
     this.video.src = src;
     this.video.load();
     this.lastAppliedPlaybackSpeed = null;
+    this.pendingPlaybackSpeed = null;
+    this.lastPlaybackRateUpdateAt = 0;
     this.resetStallTracking();
   }
 
@@ -102,20 +106,47 @@ export class VideoScene {
     this.currentOffsetY = 0;
     this.video.playbackRate = this.config.run.idleSpeed;
     this.lastAppliedPlaybackSpeed = this.config.run.idleSpeed;
+    this.pendingPlaybackSpeed = null;
+    this.lastPlaybackRateUpdateAt = performance.now();
     this.resetStallTracking();
     this.updateTransform();
   }
 
   setPlaybackSpeed(speed) {
+    const playbackRateUpdateHz = this.config.video.playbackRateUpdateHz ?? 20;
+    const minDelta = this.config.video.playbackRateMinDelta ?? 0.015;
+
     if (
       this.lastAppliedPlaybackSpeed !== null &&
-      Math.abs(this.lastAppliedPlaybackSpeed - speed) < 0.015
+      Math.abs(this.lastAppliedPlaybackSpeed - speed) < minDelta
     ) {
       return;
     }
 
-    this.video.playbackRate = speed;
-    this.lastAppliedPlaybackSpeed = speed;
+    const now = performance.now();
+    const updateIntervalMs = 1000 / Math.max(playbackRateUpdateHz, 1);
+
+    this.pendingPlaybackSpeed = speed;
+
+    if (
+      this.lastAppliedPlaybackSpeed !== null &&
+      now - this.lastPlaybackRateUpdateAt < updateIntervalMs
+    ) {
+      return;
+    }
+
+    this.applyPendingPlaybackSpeed(now);
+  }
+
+  applyPendingPlaybackSpeed(now = performance.now()) {
+    if (this.pendingPlaybackSpeed === null) {
+      return;
+    }
+
+    this.video.playbackRate = this.pendingPlaybackSpeed;
+    this.lastAppliedPlaybackSpeed = this.pendingPlaybackSpeed;
+    this.pendingPlaybackSpeed = null;
+    this.lastPlaybackRateUpdateAt = now;
   }
 
   update(deltaSeconds, snapshot) {
@@ -126,8 +157,23 @@ export class VideoScene {
 
     this.currentOffsetX = lerp(this.currentOffsetX, this.targetOffsetX, amount);
     this.currentOffsetY = lerp(this.currentOffsetY, this.targetOffsetY, amount);
+    this.flushPlaybackSpeedIfDue();
     this.updateTransform(snapshot);
     this.recoverPlaybackStall(snapshot);
+  }
+
+  flushPlaybackSpeedIfDue() {
+    if (this.pendingPlaybackSpeed === null) {
+      return;
+    }
+
+    const playbackRateUpdateHz = this.config.video.playbackRateUpdateHz ?? 20;
+    const updateIntervalMs = 1000 / Math.max(playbackRateUpdateHz, 1);
+    const now = performance.now();
+
+    if (now - this.lastPlaybackRateUpdateAt >= updateIntervalMs) {
+      this.applyPendingPlaybackSpeed(now);
+    }
   }
 
   resetStallTracking() {
