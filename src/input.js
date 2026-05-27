@@ -585,6 +585,10 @@ export class TdInputRunInput {
 export class SmartphoneMotionRunInput extends TdInputRunInput {
   constructor(config) {
     super(config);
+    this.sensorConfig = {
+      ...config.sensorInput,
+      ...config.motionSensorInput
+    };
     this.controllerConnected = false;
     this.lastControllerConnectedAt = 0;
     this.lastControllerDisconnectedAt = 0;

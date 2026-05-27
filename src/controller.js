@@ -2,6 +2,11 @@ import "./styles.css";
 import { CONFIG } from "./config.js";
 import { clamp, expSmoothingFactor, lerp } from "./utils.js";
 
+const SENSOR_CONFIG = {
+  ...CONFIG.sensorInput,
+  ...CONFIG.motionSensorInput
+};
+
 const roomId = new URLSearchParams(window.location.search).get("room") ?? "";
 const connectionDot = document.querySelector("#connectionDot");
 const connectionStatus = document.querySelector("#connectionStatus");
@@ -214,15 +219,15 @@ function updateLocalIntensity(acceleration, magnitude) {
   const magnitudeDelta = Math.abs(magnitude - baselineMagnitude);
   const magnitudeIntensity = normalizeMotion(
     magnitudeDelta,
-    CONFIG.sensorInput.deadzone,
-    CONFIG.sensorInput.fullScale
+    SENSOR_CONFIG.deadzone,
+    SENSOR_CONFIG.fullScale
   );
   const jerkIntensity = getJerkIntensity(acceleration);
 
   baselineMagnitude = lerp(
     baselineMagnitude,
     magnitude,
-    CONFIG.sensorInput.baselineSmoothing
+    SENSOR_CONFIG.baselineSmoothing
   );
   const target = Math.max(magnitudeIntensity, jerkIntensity);
   smoothedIntensity = lerp(smoothedIntensity, target, 0.32);
@@ -242,8 +247,8 @@ function getJerkIntensity(acceleration) {
 
   return normalizeMotion(
     delta,
-    CONFIG.sensorInput.jerkDeadzone,
-    CONFIG.sensorInput.jerkFullScale
+    SENSOR_CONFIG.jerkDeadzone,
+    SENSOR_CONFIG.jerkFullScale
   );
 }
 
@@ -286,11 +291,17 @@ function sendLatestMotion() {
 }
 
 function decayDebugIntensity() {
-  if (!lastMotionAt || Date.now() - lastMotionAt < CONFIG.sensorInput.staleAfterMs) {
+  if (
+    !lastMotionAt ||
+    Date.now() - lastMotionAt < SENSOR_CONFIG.staleAfterMs
+  ) {
     return;
   }
 
-  const amount = expSmoothingFactor(CONFIG.sensorInput.intensityFallSmoothing, 1 / 30);
+  const amount = expSmoothingFactor(
+    SENSOR_CONFIG.intensityFallSmoothing,
+    1 / 30
+  );
   smoothedIntensity = lerp(smoothedIntensity, 0, amount);
   renderDebug();
 }
