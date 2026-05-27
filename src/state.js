@@ -272,7 +272,7 @@ export class SimulationState {
 
   updateMessage(rawInputActive) {
     if (this.outcome === "success") {
-      this.message = "You made it before class.";
+      this.message = "Congrats!\nYou made it before class.";
       return;
     }
 
