@@ -596,6 +596,7 @@ export class SmartphoneMotionRunInput extends TdInputRunInput {
       ...config.sensorInput,
       ...config.motionSensorInput
     };
+    this.motionIdleThreshold = this.sensorConfig.runningThreshold;
     this.controllerConnected = false;
     this.lastControllerConnectedAt = 0;
     this.lastControllerDisconnectedAt = 0;
@@ -679,6 +680,18 @@ export class SmartphoneMotionRunInput extends TdInputRunInput {
       this.status = this.controllerConnected
         ? "controller-connected"
         : "waiting-controller";
+    }
+
+    if (this.targetRunIntensity <= this.motionIdleThreshold) {
+      this.targetRunIntensity = 0;
+    }
+  }
+
+  updateFromSensorMessage(message) {
+    super.updateFromSensorMessage(message);
+
+    if (this.targetRunIntensity <= this.motionIdleThreshold) {
+      this.targetRunIntensity = 0;
     }
   }
 

@@ -28,14 +28,15 @@ export const CONFIG = {
     runningThreshold: 0.08
   },
   motionSensorInput: {
-    deadzone: 0.55,
+    deadzone: 0.9,
     fullScale: 6,
-    jerkDeadzone: 0.55,
+    jerkDeadzone: 1.05,
     jerkFullScale: 5,
     baselineSmoothing: 0.02,
     intensityRiseSmoothing: 10,
     intensityFallSmoothing: 56,
-    runningThreshold: 0.12
+    staleAfterMs: 120,
+    runningThreshold: 0.18
   },
   video: {
     src: "https://pub-2d2d0dec4ce24f1cb3dce6e41e9a12a7.r2.dev/campuslatesimulatorsource_mobile.mp4",
