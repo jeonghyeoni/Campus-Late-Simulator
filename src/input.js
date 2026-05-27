@@ -389,12 +389,7 @@ export class TdInputRunInput {
         this.socket?.readyState === WebSocket.OPEN ? "waiting" : "reconnecting";
     }
 
-    const smoothing =
-      this.targetRunIntensity > this.runIntensity
-        ? this.sensorConfig.intensityRiseSmoothing
-        : this.sensorConfig.intensityFallSmoothing;
-    const amount = expSmoothingFactor(smoothing, deltaSeconds);
-    this.runIntensity = lerp(this.runIntensity, this.targetRunIntensity, amount);
+    this.runIntensity = this.targetRunIntensity;
   }
 
   getRunIntensity() {

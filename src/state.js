@@ -102,6 +102,8 @@ export class SimulationState {
       this.targetPlaybackSpeed = this.config.run.overloadSpeed;
     } else if (this.endingEffect.active) {
       this.targetPlaybackSpeed = this.config.ending.slowSpeed;
+    } else if (this.shouldBlockRunning()) {
+      this.targetPlaybackSpeed = this.config.run.idleSpeed;
     } else if (this.isSensorInputMode() && !this.isRunningIntentActive()) {
       this.targetPlaybackSpeed = this.config.run.idleSpeed;
     } else {
@@ -109,6 +111,11 @@ export class SimulationState {
         this.config.run.idleSpeed +
         (this.getCurrentMaxRunSpeed() - this.config.run.idleSpeed) *
           this.getPlaybackRunIntensity();
+    }
+
+    if (this.isSensorInputMode()) {
+      this.playbackSpeed = this.targetPlaybackSpeed;
+      return;
     }
 
     const amount = expSmoothingFactor(
