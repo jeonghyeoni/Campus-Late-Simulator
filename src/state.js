@@ -80,7 +80,7 @@ export class SimulationState {
     }
 
     const amount = expSmoothingFactor(
-      this.config.run.playbackSmoothing,
+      this.getPlaybackSmoothing(),
       deltaSeconds
     );
     this.playbackSpeed = lerp(
@@ -88,6 +88,16 @@ export class SimulationState {
       this.targetPlaybackSpeed,
       amount
     );
+  }
+
+  getPlaybackSmoothing() {
+    if (!this.isSensorInputMode()) {
+      return this.config.run.playbackSmoothing;
+    }
+
+    return this.targetPlaybackSpeed >= this.playbackSpeed
+      ? this.config.run.sensorPlaybackRiseSmoothing
+      : this.config.run.sensorPlaybackFallSmoothing;
   }
 
   updateHeartRate(deltaSeconds) {
@@ -102,7 +112,7 @@ export class SimulationState {
   }
 
   getHeartSampleIntervalSeconds() {
-    if (this.inputActive && !this.isOverloaded()) {
+    if (this.isRunning && !this.isOverloaded()) {
       return (
         this.config.heart.activeSampleIntervalSeconds ??
         this.config.heart.sampleIntervalSeconds
@@ -120,7 +130,7 @@ export class SimulationState {
         heart.overloadRecoveryBpmPerSample +
         this.randomSigned(heart.recoveryJitterBpm);
       this.heartRate -= Math.max(2, recovery);
-    } else if (this.inputActive) {
+    } else if (this.isRunning) {
       const effort = 0.35 + this.runIntensity * 0.65;
       const rise =
         heart.activeRiseBpmPerSample * effort +
@@ -261,6 +271,11 @@ export class SimulationState {
 
   isOverloaded() {
     return this.overloadActive;
+  }
+
+  isSensorInputMode() {
+    const mode = this.inputSource.getMode?.();
+    return mode === "phone" || mode === "watch" || mode === "phone-motion";
   }
 
   isRunUnlocked(video) {

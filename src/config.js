@@ -22,8 +22,8 @@ export const CONFIG = {
     jerkDeadzone: 0.04,
     jerkFullScale: 0.65,
     baselineSmoothing: 0.03,
-    intensityRiseSmoothing: 10,
-    intensityFallSmoothing: 4,
+    intensityRiseSmoothing: 16,
+    intensityFallSmoothing: 18,
     staleAfterMs: 650,
     runningThreshold: 0.08
   },
@@ -33,8 +33,8 @@ export const CONFIG = {
     jerkDeadzone: 0.55,
     jerkFullScale: 5,
     baselineSmoothing: 0.02,
-    intensityRiseSmoothing: 6,
-    intensityFallSmoothing: 5,
+    intensityRiseSmoothing: 14,
+    intensityFallSmoothing: 18,
     runningThreshold: 0.12
   },
   video: {
@@ -84,6 +84,8 @@ export const CONFIG = {
     mobileElevatedHeartRateSpeedLimit: 1.3,
     overloadSpeed: 0.4,
     playbackSmoothing: 4,
+    sensorPlaybackRiseSmoothing: 12,
+    sensorPlaybackFallSmoothing: 14,
     unlockVideoTimeSeconds: 16,
     promptDurationSeconds: 4,
     intensityRisePerSecond: 1.35,
