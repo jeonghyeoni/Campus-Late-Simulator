@@ -187,7 +187,14 @@ export class SimulationState {
   sampleHeartRate() {
     const heart = this.config.heart;
 
-    if (this.isOverloaded()) {
+    if (!this.runUnlocked) {
+      const idleTarget = this.randomBetween(heart.idleMinBpm, heart.idleMaxBpm);
+      const drift = Math.min(
+        Math.abs(idleTarget - this.heartRate),
+        heart.idleDriftBpmPerSample
+      );
+      this.heartRate += idleTarget >= this.heartRate ? drift : -drift;
+    } else if (this.isOverloaded()) {
       const recovery =
         heart.overloadRecoveryBpmPerSample +
         this.randomSigned(heart.recoveryJitterBpm);
@@ -204,9 +211,9 @@ export class SimulationState {
       this.heartRate -= Math.max(1, recovery);
     }
 
-    this.heartRate = Math.round(
-      clamp(this.heartRate, heart.baseBpm, heart.maxBpm)
-    );
+    const minBpm = this.runUnlocked ? heart.baseBpm : heart.idleMinBpm;
+    const maxBpm = this.runUnlocked ? heart.maxBpm : heart.idleMaxBpm;
+    this.heartRate = Math.round(clamp(this.heartRate, minBpm, maxBpm));
 
     if (
       !this.isOverloaded() &&
@@ -230,6 +237,10 @@ export class SimulationState {
 
   randomSigned(amount) {
     return (Math.random() * 2 - 1) * amount;
+  }
+
+  randomBetween(min, max) {
+    return min + Math.random() * (max - min);
   }
 
   getCurrentMaxRunSpeed() {

@@ -109,6 +109,9 @@ export const CONFIG = {
   },
   heart: {
     baseBpm: 80,
+    idleMinBpm: 75,
+    idleMaxBpm: 80,
+    idleDriftBpmPerSample: 2,
     maxBpm: 176,
     overloadThresholdBpm: 175,
     overloadRecoveryThresholdBpm: 140,
