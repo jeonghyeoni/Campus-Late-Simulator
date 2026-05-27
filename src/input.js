@@ -719,6 +719,7 @@ export class SmartphoneMotionRunInput extends TdInputRunInput {
     return {
       ...snapshot,
       readyToStart: this.isReadyToStart(),
+      motionEnabled: this.hasRecentSensorData(),
       controllerConnected: this.controllerConnected,
       controllerUrl: this.getControllerUrl(snapshot.roomId),
       lastControllerConnectedAt: this.lastControllerConnectedAt,
@@ -762,10 +763,22 @@ export class SmartphoneMotionRunInput extends TdInputRunInput {
     super.reset();
   }
 
+  hasRecentSensorData() {
+    if (!this.lastSensorAt) {
+      return false;
+    }
+
+    return (
+      Date.now() - this.lastSensorAt <=
+      this.sensorConfig.staleAfterMs + this.bridgeConfig.statusHoldMs
+    );
+  }
+
   isReadyToStart() {
     return (
       this.mode === "phone-motion" &&
       this.controllerConnected &&
+      this.hasRecentSensorData() &&
       this.socket?.readyState === WebSocket.OPEN &&
       this.status !== "reconnecting" &&
       this.status !== "disconnected" &&

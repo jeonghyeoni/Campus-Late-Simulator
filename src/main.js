@@ -175,12 +175,34 @@ function renderStartButton(connection = null) {
   const mode = inputSource.getMode();
   const sensorMode =
     mode === "phone" || mode === "watch" || mode === "phone-motion";
+  const connectionSnapshot =
+    sensorMode ? connection ?? inputSource.getConnectionSnapshot() : null;
   const readyToStart = sensorMode
-    ? (connection ?? inputSource.getConnectionSnapshot()).readyToStart
+    ? connectionSnapshot.readyToStart
     : inputSource.isReadyToStart();
 
   startButton.disabled = !readyToStart;
-  startButton.textContent = readyToStart ? "START" : "CONNECT DEVICE";
+  startButton.textContent = getStartButtonText(
+    mode,
+    connectionSnapshot,
+    readyToStart
+  );
+}
+
+function getStartButtonText(mode, connection, readyToStart) {
+  if (readyToStart) {
+    return "START";
+  }
+
+  if (
+    mode === "phone-motion" &&
+    connection?.controllerConnected &&
+    !connection?.motionEnabled
+  ) {
+    return "ENABLE MOTION";
+  }
+
+  return "CONNECT DEVICE";
 }
 
 async function startExperience() {

@@ -22,9 +22,9 @@ export const CONFIG = {
     jerkDeadzone: 0.04,
     jerkFullScale: 0.65,
     baselineSmoothing: 0.03,
-    intensityRiseSmoothing: 26,
-    intensityFallSmoothing: 34,
-    staleAfterMs: 650,
+    intensityRiseSmoothing: 34,
+    intensityFallSmoothing: 56,
+    staleAfterMs: 220,
     runningThreshold: 0.08
   },
   motionSensorInput: {
@@ -33,12 +33,12 @@ export const CONFIG = {
     jerkDeadzone: 0.55,
     jerkFullScale: 5,
     baselineSmoothing: 0.02,
-    intensityRiseSmoothing: 24,
-    intensityFallSmoothing: 34,
+    intensityRiseSmoothing: 32,
+    intensityFallSmoothing: 56,
     runningThreshold: 0.12
   },
   video: {
-    src: "https://pub-2d2d0dec4ce24f1cb3dce6e41e9a12a7.r2.dev/campuslatesimulatorsource.mp4",
+    src: "https://pub-2d2d0dec4ce24f1cb3dce6e41e9a12a7.r2.dev/campuslatesimulatorsource_mobile.mp4",
     sources: [
       {
         id: "4k",
@@ -84,8 +84,8 @@ export const CONFIG = {
     mobileElevatedHeartRateSpeedLimit: 1.3,
     overloadSpeed: 0.4,
     playbackSmoothing: 4,
-    sensorPlaybackRiseSmoothing: 22,
-    sensorPlaybackFallSmoothing: 28,
+    sensorPlaybackRiseSmoothing: 34,
+    sensorPlaybackFallSmoothing: 56,
     unlockVideoTimeSeconds: 16,
     promptDurationSeconds: 4,
     intensityRisePerSecond: 1.35,
