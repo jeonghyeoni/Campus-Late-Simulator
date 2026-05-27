@@ -90,6 +90,10 @@ export class KeyboardRunInput {
     return this.prefersTouchInput;
   }
 
+  isReadyToStart() {
+    return true;
+  }
+
   shouldUseTouchRun(event) {
     return event.pointerType === "touch" || event.pointerType === "pen";
   }
@@ -399,6 +403,9 @@ export class TdInputRunInput {
   reset() {
     this.runIntensity = 0;
     this.targetRunIntensity = 0;
+    this.baselineMagnitude = null;
+    this.lastAcceleration = null;
+    this.lastSensorAt = 0;
   }
 
   getRunPromptMessage() {
@@ -418,6 +425,7 @@ export class TdInputRunInput {
       mode: this.mode,
       status: this.status,
       statusText: this.getStatusText(),
+      readyToStart: this.isReadyToStart(),
       roomId: this.room?.roomId ?? "",
       roomToken: this.room?.roomToken ?? "",
       serverHost: this.room?.serverHost ?? "",
@@ -451,6 +459,24 @@ export class TdInputRunInput {
     }
 
     return "Select TDInput mode";
+  }
+
+  isReadyToStart() {
+    if (!this.mode || !this.lastSensorAt) {
+      return false;
+    }
+
+    const recentSensor =
+      Date.now() - this.lastSensorAt <=
+      this.sensorConfig.staleAfterMs + this.bridgeConfig.statusHoldMs;
+
+    return (
+      recentSensor &&
+      this.socket?.readyState === WebSocket.OPEN &&
+      this.status !== "reconnecting" &&
+      this.status !== "disconnected" &&
+      this.status !== "error"
+    );
   }
 
   send(payload) {
@@ -570,6 +596,11 @@ export class SmartphoneMotionRunInput extends TdInputRunInput {
       : null;
   }
 
+  disconnect(options = {}) {
+    super.disconnect(options);
+    this.controllerConnected = false;
+  }
+
   handleMessage(data) {
     let message = null;
     try {
@@ -684,6 +715,7 @@ export class SmartphoneMotionRunInput extends TdInputRunInput {
     const snapshot = super.getConnectionSnapshot();
     return {
       ...snapshot,
+      readyToStart: this.isReadyToStart(),
       controllerConnected: this.controllerConnected,
       controllerUrl: this.getControllerUrl(snapshot.roomId),
       lastControllerConnectedAt: this.lastControllerConnectedAt,
@@ -721,6 +753,22 @@ export class SmartphoneMotionRunInput extends TdInputRunInput {
 
     controllerUrl.searchParams.set("room", roomId);
     return controllerUrl.toString();
+  }
+
+  reset() {
+    super.reset();
+    this.controllerConnected = false;
+  }
+
+  isReadyToStart() {
+    return (
+      this.mode === "phone-motion" &&
+      this.controllerConnected &&
+      this.socket?.readyState === WebSocket.OPEN &&
+      this.status !== "reconnecting" &&
+      this.status !== "disconnected" &&
+      this.status !== "error"
+    );
   }
 }
 
@@ -847,5 +895,15 @@ export class RunInputManager {
     return this.mode === "phone-motion"
       ? this.motionInput.getConnectionSnapshot()
       : this.tdInput.getConnectionSnapshot();
+  }
+
+  isReadyToStart() {
+    if (this.mode === "keyboard") {
+      return this.keyboardInput.isReadyToStart();
+    }
+
+    return this.mode === "phone-motion"
+      ? this.motionInput.isReadyToStart()
+      : this.tdInput.isReadyToStart();
   }
 }

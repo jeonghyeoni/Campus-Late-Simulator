@@ -46,7 +46,7 @@ Local defaults:
 Open the app and choose one input mode:
 
 - `Keyboard (Spacebar)` uses the keyboard.
-- `Smartphone (TDInput)` and `Apple Watch (TDInput)` show the TDInput room, host, and UDP port.
+- `iPhone (TDInput)` and `Apple Watch (TDInput)` show the TDInput room, host, and UDP port.
 - `Smartphone Motion` shows a QR code for the browser controller.
 
 For local Smartphone Motion testing from a real phone, set `VITE_CONTROLLER_BASE_URL` to the app origin the phone can reach, such as your LAN IP or a tunnel URL. The QR code always points directly at `controller.html` to avoid redirect loops on mobile Safari.
@@ -154,7 +154,7 @@ Oracle Cloud also requires matching ingress rules in the VCN security list or ne
 ## TDInput Setup
 
 1. Open the deployed web app.
-2. Select `Smartphone (TDInput)` or `Apple Watch (TDInput)`.
+2. Select `iPhone (TDInput)` or `Apple Watch (TDInput)`.
 3. Wait for the connection panel to show:
    - Room ID
    - Server IP / Hostname

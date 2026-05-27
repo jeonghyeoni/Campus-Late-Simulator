@@ -616,6 +616,14 @@ button {
   backdrop-filter: blur(12px);
 }
 
+.start-button:disabled {
+  color: rgb(247 251 250 / 52%);
+  background: rgb(6 7 8 / 42%);
+  border-color: rgb(255 255 255 / 14%);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
 .controller-page {
   min-height: 100svh;
   padding:

@@ -45,6 +45,7 @@ const audioEngine = new AudioEngine(CONFIG.audio);
 
 let previousTime = performance.now();
 let started = false;
+let videoUnavailable = false;
 
 window.campusLateSimulator = {
   getState: () => simulationState.getSnapshot(),
@@ -101,6 +102,7 @@ function renderTdInputConnection() {
   startPanel.dataset.inputMode = mode;
 
   if (!sensorMode) {
+    renderStartButton();
     return;
   }
 
@@ -127,6 +129,8 @@ function renderTdInputConnection() {
   } else {
     renderedMotionQrUrl = "";
   }
+
+  renderStartButton(connection);
 }
 
 function renderMotionQr(url) {
@@ -155,7 +159,34 @@ function getHostFromWebSocketUrl(url) {
   }
 }
 
+function renderStartButton(connection = null) {
+  if (started) {
+    return;
+  }
+
+  if (videoUnavailable) {
+    startButton.textContent = "VIDEO ERROR";
+    startButton.disabled = true;
+    return;
+  }
+
+  const mode = inputSource.getMode();
+  const sensorMode =
+    mode === "phone" || mode === "watch" || mode === "phone-motion";
+  const readyToStart = sensorMode
+    ? (connection ?? inputSource.getConnectionSnapshot()).readyToStart
+    : inputSource.isReadyToStart();
+
+  startButton.disabled = !readyToStart;
+  startButton.textContent = readyToStart ? "START" : "CONNECT DEVICE";
+}
+
 async function startExperience() {
+  if (!inputSource.isReadyToStart()) {
+    renderStartButton();
+    return;
+  }
+
   try {
     audioEngine.start();
     await videoScene.play();
@@ -186,15 +217,17 @@ inputModeControls.forEach((control) => {
 
     inputSource.setMode(control.value);
     renderTdInputConnection();
+    renderStartButton();
   });
 });
 
 startButton.addEventListener("click", startExperience);
 
 videoScene.video.addEventListener("error", () => {
-  startButton.textContent = "VIDEO ERROR";
-  startButton.disabled = true;
+  videoUnavailable = true;
+  renderStartButton();
 });
 
 overlayUi.render(simulationState.getSnapshot());
+renderStartButton();
 requestAnimationFrame(tick);
