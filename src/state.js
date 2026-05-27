@@ -234,18 +234,9 @@ export class SimulationState {
 
   getCurrentMaxRunSpeed() {
     const isTouchInput = this.inputSource.prefersTouch?.() ?? false;
-    const maxSpeed = isTouchInput
+    return isTouchInput
       ? this.config.run.mobileMaxSpeed
       : this.config.run.maxSpeed;
-    const elevatedLimit = isTouchInput
-      ? this.config.run.mobileElevatedHeartRateSpeedLimit
-      : this.config.run.elevatedHeartRateSpeedLimit;
-
-    if (this.heartRate > this.config.run.elevatedHeartRateThresholdBpm) {
-      return elevatedLimit;
-    }
-
-    return maxSpeed;
   }
 
   updateDistanceFromVideo(video) {
