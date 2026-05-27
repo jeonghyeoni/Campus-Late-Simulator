@@ -12,11 +12,11 @@ export class SimulationState {
     this.runIntensity = 0;
     this.inputActive = false;
     this.isRunning = false;
-    this.playbackSpeed = config.run.idleSpeed;
-    this.targetPlaybackSpeed = config.run.idleSpeed;
-    this.heartRate = config.heart.baseBpm;
+    this.playbackSpeed = this.config.run.idleSpeed;
+    this.targetPlaybackSpeed = this.config.run.idleSpeed;
+    this.heartRate = this.config.heart.baseBpm;
     this.heartSampleAccumulator = 0;
-    this.distanceMeters = config.distance.startMeters;
+    this.distanceMeters = this.config.distance.startMeters;
     this.videoTime = 0;
     this.runUnlocked = false;
     this.overloadActive = false;
