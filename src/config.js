@@ -88,7 +88,7 @@ export const CONFIG = {
   run: {
     idleSpeed: 1,
     maxSpeed: 2.3,
-    mobileMaxSpeed: 1.45,
+    mobileMaxSpeed: 2.3,
     overloadSpeed: 0.4,
     playbackSmoothing: 4,
     sensorPlaybackRiseSmoothing: 8,
