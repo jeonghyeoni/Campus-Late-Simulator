@@ -75,7 +75,7 @@ VITE_CONTROLLER_BASE_URL=https://your-pages-site.pages.dev
 For HTTPS frontends such as Cloudflare Pages, use WSS. The app defaults to the local bridge on localhost and to the production WSS bridge on deployed hosts:
 
 ```sh
-VITE_BRIDGE_WS_URL=wss://168.110.110.59.sslip.io
+VITE_BRIDGE_WS_URL=wss://159.223.46.64.sslip.io
 ```
 
 When using your own TLS reverse proxy or domain, change only the frontend value:

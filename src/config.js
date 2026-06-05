@@ -3,7 +3,7 @@ const isLocalBridgeHost =
   window.location.hostname.endsWith(".local");
 const defaultBridgeWsUrl = isLocalBridgeHost
   ? "ws://127.0.0.1:8080"
-  : "wss://168.110.110.59.sslip.io";
+  : "wss://159.223.46.64.sslip.io";
 
 export const CONFIG = {
   viewMode: "flat",
