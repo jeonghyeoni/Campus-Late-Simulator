@@ -21,6 +21,8 @@ export class AudioEngine {
     this.professorParamsInitialized = false;
     this.realProfessorTriggered = false;
     this.classroomHallwayVolumeRaised = false;
+    this.pendingBgmTrack = null;
+    this.bgmTrackPromise = null;
   }
 
   async start() {
@@ -75,6 +77,9 @@ export class AudioEngine {
 
     this.device.node.connect(this.audioContext.destination);
     await this.loadDataBufferDependencies();
+    if (this.pendingBgmTrack) {
+      await this.applyBgmTrack(this.pendingBgmTrack);
+    }
     this.startTransport();
     this.ready = true;
 
@@ -344,6 +349,43 @@ export class AudioEngine {
       .join("/");
 
     return `${rnboDirectory}/${mediaPath}`;
+  }
+
+  setBgmTrack(track) {
+    if (!track?.file) {
+      return Promise.resolve(false);
+    }
+
+    this.pendingBgmTrack = track;
+    if (!this.device || !this.audioContext) {
+      return Promise.resolve(false);
+    }
+
+    this.bgmTrackPromise = this.applyBgmTrack(track);
+    return this.bgmTrackPromise;
+  }
+
+  async applyBgmTrack(track) {
+    const dependency = this.normalizeDependency({
+      id: "bgm",
+      file: track.file
+    });
+
+    try {
+      await this.loadDataBuffer(dependency);
+      console.info("BGM track loaded.", {
+        title: track.title ?? dependency.file,
+        file: dependency.file
+      });
+      return true;
+    } catch (error) {
+      console.warn("BGM track could not be loaded.", {
+        title: track.title ?? dependency.file,
+        file: dependency.file,
+        error
+      });
+      return false;
+    }
   }
 
   updateFromSnapshot(snapshot) {

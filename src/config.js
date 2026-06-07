@@ -73,6 +73,12 @@ export const CONFIG = {
     enabled: true,
     patchUrl: "/rnbo/CampusLateAudioEngine.export.json",
     dependenciesUrl: "/rnbo/dependencies.json",
+    bgmTracks: [
+      {
+        title: "Monume House",
+        file: "media\\bgm\\monume-house-509469.mp3"
+      }
+    ],
     debug: {
       dataBuffers: true,
       verifyDataBufferAfterSet: true

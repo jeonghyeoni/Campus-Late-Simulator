@@ -32,20 +32,31 @@
           </div>
         </section>
 
-        <section class="hud-card hud-card--status" aria-label="Movement status">
-          <span class="hud-label">STATUS</span>
-          <div class="status-row">
-            <svg class="runner-icon" viewBox="0 0 64 64" aria-hidden="true">
-              <circle cx="45" cy="10" r="7" />
-              <path d="M34 17 22 28l-12-1" />
-              <path d="M22 28 35 34l12 15" />
-              <path d="M35 34 21 47 10 59" />
-              <path d="M28 20 40 27l11-2" />
-            </svg>
-            <span id="paceValue" class="status-value">WALKING</span>
-          </div>
-          <span id="speedValue" class="speed-chip">1.00x</span>
-        </section>
+        <div class="hud-stack hud-stack--status">
+          <section class="hud-card hud-card--music" aria-label="Music player">
+            <span class="hud-label">MUSIC</span>
+            <div class="music-row">
+              <button id="musicPrevButton" class="music-button" type="button" aria-label="Previous BGM track">◂◂</button>
+              <span id="musicTitle" class="music-title">----</span>
+              <button id="musicNextButton" class="music-button" type="button" aria-label="Next BGM track">▸▸</button>
+            </div>
+          </section>
+
+          <section class="hud-card hud-card--status" aria-label="Movement status">
+            <span class="hud-label">STATUS</span>
+            <div class="status-row">
+              <svg class="runner-icon" viewBox="0 0 64 64" aria-hidden="true">
+                <circle cx="45" cy="10" r="7" />
+                <path d="M34 17 22 28l-12-1" />
+                <path d="M22 28 35 34l12 15" />
+                <path d="M35 34 21 47 10 59" />
+                <path d="M28 20 40 27l11-2" />
+              </svg>
+              <span id="paceValue" class="status-value">WALKING</span>
+            </div>
+            <span id="speedValue" class="speed-chip">1.00x</span>
+          </section>
+        </div>
 
         <section class="hud-card hud-card--distance" aria-label="Distance to classroom">
           <span class="hud-label">DISTANCE TO CLASSROOM</span>

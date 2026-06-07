@@ -29,6 +29,9 @@ const tdInputInstructions = document.querySelector("#tdInputInstructions");
 const motionQrPanel = document.querySelector("#motionQrPanel");
 const motionQrCanvas = document.querySelector("#motionQrCanvas");
 const motionControllerUrl = document.querySelector("#motionControllerUrl");
+const musicPrevButton = document.querySelector("#musicPrevButton");
+const musicNextButton = document.querySelector("#musicNextButton");
+const musicTitle = document.querySelector("#musicTitle");
 
 const keyboardInput = new KeyboardRunInput(CONFIG, sceneContainer);
 const tdInput = new TdInputRunInput(CONFIG);
@@ -47,6 +50,7 @@ const audioEngine = new AudioEngine(CONFIG.audio);
 let previousTime = performance.now();
 let started = false;
 let videoUnavailable = false;
+let selectedBgmTrackIndex = 0;
 
 window.campusLateSimulator = {
   getState: () => simulationState.getSnapshot(),
@@ -68,6 +72,40 @@ function populateQualitySelect() {
       return option;
     })
   );
+}
+
+function getBgmTracks() {
+  return Array.isArray(CONFIG.audio.bgmTracks) ? CONFIG.audio.bgmTracks : [];
+}
+
+function getSelectedBgmTrack() {
+  const tracks = getBgmTracks();
+  return tracks[selectedBgmTrackIndex] ?? null;
+}
+
+function renderMusicPlayer() {
+  const tracks = getBgmTracks();
+  const track = getSelectedBgmTrack();
+  const hasTracks = tracks.length > 0;
+
+  musicTitle.textContent = track?.title ?? "NO TRACK";
+  musicPrevButton.disabled = !hasTracks;
+  musicNextButton.disabled = !hasTracks;
+}
+
+function selectBgmTrack(direction) {
+  const tracks = getBgmTracks();
+  if (!tracks.length) {
+    return;
+  }
+
+  selectedBgmTrackIndex =
+    (selectedBgmTrackIndex + direction + tracks.length) % tracks.length;
+  renderMusicPlayer();
+
+  audioEngine.setBgmTrack(getSelectedBgmTrack()).catch((error) => {
+    console.warn("Unable to switch BGM track.", error);
+  });
 }
 
 function tick(now) {
@@ -246,6 +284,7 @@ function renderRetryButton(snapshot) {
 }
 
 populateQualitySelect();
+renderMusicPlayer();
 
 qualitySelect.addEventListener("change", () => {
   if (started) {
@@ -269,6 +308,8 @@ inputModeControls.forEach((control) => {
 
 startButton.addEventListener("click", startExperience);
 retryButton.addEventListener("click", retryExperience);
+musicPrevButton.addEventListener("click", () => selectBgmTrack(-1));
+musicNextButton.addEventListener("click", () => selectBgmTrack(1));
 
 videoScene.video.addEventListener("error", () => {
   videoUnavailable = true;
