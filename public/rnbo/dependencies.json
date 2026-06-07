@@ -10,9 +10,5 @@
   {
     "id": "breathLoop",
     "file": "media\\breathLoop.wav"
-  },
-  {
-    "id": "bgSound",
-    "file": "media\\bgSound.mp3"
   }
 ]
