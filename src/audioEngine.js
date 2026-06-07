@@ -71,6 +71,7 @@ export class AudioEngine {
       patcher
     });
     this.logDeviceDataBuffers();
+    this.initializeProfessorParameters();
 
     this.device.node.connect(this.audioContext.destination);
     await this.loadDataBufferDependencies();
