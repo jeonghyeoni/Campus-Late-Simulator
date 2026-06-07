@@ -113,7 +113,7 @@ export const CONFIG = {
     idleMaxBpm: 80,
     idleDriftBpmPerSample: 2,
     maxBpm: 176,
-    overloadThresholdBpm: 175,
+    overloadThresholdBpm: 160,
     overloadRecoveryThresholdBpm: 140,
     sampleIntervalSeconds: 1,
     activeSampleIntervalSeconds: 1.5,

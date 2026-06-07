@@ -1,9 +1,7 @@
 import { createDevice, TransportEvent, TransportState } from "@rnbo/js";
-import { clamp } from "./utils.js";
 
-const PUNCH_TRIGGER_SECONDS = 75;
+const PUNCH_TRIGGER_SECONDS = 74;
 const PUNCH_TRIGGER_RESET_MS = 50;
-const PROF_FADE_SECONDS = 90;
 
 export class AudioEngine {
   constructor(config) {
@@ -351,7 +349,7 @@ export class AudioEngine {
     this.setParameter("playbackSpeed", snapshot.playbackSpeed);
     this.setParameter("overloadActive", snapshot.overload?.active ? 1 : 0);
     this.updatePunchTrigger(snapshot);
-    this.updateProfessorVolume(snapshot);
+    this.updateProfessorVolume();
   }
 
   updatePunchTrigger(snapshot) {
@@ -383,14 +381,8 @@ export class AudioEngine {
     }, PUNCH_TRIGGER_RESET_MS);
   }
 
-  updateProfessorVolume(snapshot) {
-    const timeRemaining = snapshot.timeRemaining;
-    const proffesorVol =
-      typeof timeRemaining === "number" && Number.isFinite(timeRemaining)
-        ? clamp(1 - timeRemaining / PROF_FADE_SECONDS, 0, 1)
-        : 0;
-
-    this.setParameter("proffesorVol", proffesorVol);
+  updateProfessorVolume() {
+    this.setParameter("proffesorVol", 1);
   }
 
   setParameter(name, value) {
