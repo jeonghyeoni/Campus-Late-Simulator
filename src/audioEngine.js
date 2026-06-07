@@ -3,7 +3,7 @@ import { clamp } from "./utils.js";
 
 const PUNCH_TRIGGER_SECONDS = 75;
 const PUNCH_TRIGGER_RESET_MS = 50;
-const PROF_FADE_SECONDS = 60;
+const PROF_FADE_SECONDS = 90;
 
 export class AudioEngine {
   constructor(config) {
