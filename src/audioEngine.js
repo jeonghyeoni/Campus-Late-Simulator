@@ -385,12 +385,12 @@ export class AudioEngine {
 
   updateProfessorVolume(snapshot) {
     const timeRemaining = snapshot.timeRemaining;
-    const profVol =
+    const proffesorVol =
       typeof timeRemaining === "number" && Number.isFinite(timeRemaining)
         ? clamp(1 - timeRemaining / PROF_FADE_SECONDS, 0, 1)
         : 0;
 
-    this.setParameter("profVol", profVol);
+    this.setParameter("proffesorVol", proffesorVol);
   }
 
   setParameter(name, value) {
