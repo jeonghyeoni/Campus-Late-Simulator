@@ -19,6 +19,8 @@ export class SimulationState {
     this.heartSampleAccumulator = 0;
     this.distanceMeters = this.config.distance.startMeters;
     this.videoTime = 0;
+    this.videoDuration = 0;
+    this.timeRemaining = null;
     this.runUnlocked = false;
     this.quietCorridorActive = false;
     this.previousQuietCorridorActive = false;
@@ -38,6 +40,11 @@ export class SimulationState {
   update(deltaSeconds, video) {
     this.inputSource.update(deltaSeconds);
     this.videoTime = video?.currentTime ?? 0;
+    this.videoDuration =
+      video?.duration && Number.isFinite(video.duration) ? video.duration : 0;
+    this.timeRemaining = this.videoDuration
+      ? Math.max(0, this.videoDuration - this.videoTime)
+      : null;
     this.runUnlocked = this.isRunUnlocked(video);
     this.updateQuietCorridor(deltaSeconds);
     if (!this.runUnlocked) {
@@ -415,6 +422,8 @@ export class SimulationState {
       heartRate: this.heartRate,
       distanceMeters: this.distanceMeters,
       videoTime: this.videoTime,
+      videoDuration: this.videoDuration,
+      timeRemaining: this.timeRemaining,
       runUnlocked: this.runUnlocked,
       quietCorridor: {
         active: this.quietCorridorActive,

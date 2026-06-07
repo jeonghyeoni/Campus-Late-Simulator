@@ -1,4 +1,9 @@
 import { createDevice, TransportEvent, TransportState } from "@rnbo/js";
+import { clamp } from "./utils.js";
+
+const PUNCH_TRIGGER_SECONDS = 75;
+const PUNCH_TRIGGER_RESET_MS = 50;
+const PROF_FADE_SECONDS = 60;
 
 export class AudioEngine {
   constructor(config) {
@@ -10,6 +15,8 @@ export class AudioEngine {
     this.parameterCache = new Map();
     this.missingParameters = new Set();
     this.patcher = null;
+    this.lastSnapshotVideoTime = null;
+    this.punchTriggered = false;
   }
 
   async start() {
@@ -343,6 +350,47 @@ export class AudioEngine {
     this.setParameter("runIntensity", snapshot.runIntensity);
     this.setParameter("playbackSpeed", snapshot.playbackSpeed);
     this.setParameter("overloadActive", snapshot.overload?.active ? 1 : 0);
+    this.updatePunchTrigger(snapshot);
+    this.updateProfessorVolume(snapshot);
+  }
+
+  updatePunchTrigger(snapshot) {
+    const videoTime = Number(snapshot.videoTime);
+    if (!Number.isFinite(videoTime)) {
+      return;
+    }
+
+    if (videoTime < PUNCH_TRIGGER_SECONDS - 0.5) {
+      this.punchTriggered = false;
+    }
+
+    const crossedPunchTime =
+      !this.punchTriggered &&
+      videoTime >= PUNCH_TRIGGER_SECONDS &&
+      (this.lastSnapshotVideoTime === null ||
+        this.lastSnapshotVideoTime < PUNCH_TRIGGER_SECONDS);
+
+    this.lastSnapshotVideoTime = videoTime;
+
+    if (!crossedPunchTime) {
+      return;
+    }
+
+    this.punchTriggered = true;
+    this.setParameter("punchTrigger", 1);
+    window.setTimeout(() => {
+      this.setParameter("punchTrigger", 0);
+    }, PUNCH_TRIGGER_RESET_MS);
+  }
+
+  updateProfessorVolume(snapshot) {
+    const timeRemaining = snapshot.timeRemaining;
+    const profVol =
+      typeof timeRemaining === "number" && Number.isFinite(timeRemaining)
+        ? clamp(1 - timeRemaining / PROF_FADE_SECONDS, 0, 1)
+        : 0;
+
+    this.setParameter("profVol", profVol);
   }
 
   setParameter(name, value) {

@@ -1,6 +1,18 @@
 [
   {
+    "id": "punch",
+    "file": "media\\punch.mp3"
+  },
+  {
+    "id": "profVoice",
+    "file": "media\\profVoice.aif"
+  },
+  {
     "id": "breathLoop",
     "file": "media\\breathLoop.wav"
+  },
+  {
+    "id": "bgSound",
+    "file": "media\\bgSound.aif"
   }
 ]
