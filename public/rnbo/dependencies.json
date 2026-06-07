@@ -14,5 +14,9 @@
   {
     "id": "realProfVoice",
     "file": "media\\realProfVoice.mp3"
+  },
+  {
+    "id": "bgm",
+    "file": "media\\monume-house-509469.mp3"
   }
 ]
