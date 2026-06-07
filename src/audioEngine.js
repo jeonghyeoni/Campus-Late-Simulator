@@ -3,7 +3,8 @@ import { clamp } from "./utils.js";
 
 const PUNCH_TRIGGER_SECONDS = 74;
 const PUNCH_TRIGGER_RESET_MS = 50;
-const PROFESSOR_FADE_SECONDS = 90;
+const TRIGGER_RESET_MS = 50;
+const HALLUCINATION_HEART_THRESHOLD_BPM = 100;
 
 export class AudioEngine {
   constructor(config) {
@@ -17,6 +18,9 @@ export class AudioEngine {
     this.patcher = null;
     this.lastSnapshotVideoTime = null;
     this.punchTriggered = false;
+    this.professorParamsInitialized = false;
+    this.realProfessorTriggered = false;
+    this.classroomHallwayVolumeRaised = false;
   }
 
   async start() {
@@ -351,7 +355,7 @@ export class AudioEngine {
     this.setParameter("playbackSpeed", snapshot.playbackSpeed);
     this.setParameter("overloadActive", snapshot.overload?.active ? 1 : 0);
     this.updatePunchTrigger(snapshot);
-    this.updateProfessorVolume(snapshot);
+    this.updateProfessorVoice(snapshot);
   }
 
   updatePunchTrigger(snapshot) {
@@ -383,14 +387,85 @@ export class AudioEngine {
     }, PUNCH_TRIGGER_RESET_MS);
   }
 
-  updateProfessorVolume(snapshot) {
-    const timeRemaining = snapshot.timeRemaining;
-    const proffesorVol =
-      typeof timeRemaining === "number" && Number.isFinite(timeRemaining)
-        ? clamp(1 - timeRemaining / PROFESSOR_FADE_SECONDS, 0, 1)
+  updateProfessorVoice(snapshot) {
+    this.initializeProfessorParameters();
+    this.resetProfessorTriggersIfNeeded(snapshot);
+    this.updateHallucinationProfessorVolume(snapshot);
+    this.updateRealProfessorTrigger(snapshot);
+    this.updateRealProfessorHallwayVolume(snapshot);
+    this.updateRealProfessorNear(snapshot);
+  }
+
+  initializeProfessorParameters() {
+    if (this.professorParamsInitialized) {
+      return;
+    }
+
+    this.setHallucinationProfessorVolume(0);
+    this.setParameter("realProfTrigger", 0);
+    this.setParameter("realProfVol", 0);
+    this.setParameter("realProfNear", 0);
+    this.professorParamsInitialized = true;
+  }
+
+  resetProfessorTriggersIfNeeded(snapshot) {
+    if (snapshot.classStarted === false) {
+      this.realProfessorTriggered = false;
+    }
+
+    if (!snapshot.classroomHallway?.hasEntered) {
+      if (this.classroomHallwayVolumeRaised) {
+        this.setParameter("realProfVol", 0);
+      }
+      this.classroomHallwayVolumeRaised = false;
+    }
+  }
+
+  updateHallucinationProfessorVolume(snapshot) {
+    const classStarted = snapshot.classStarted === true;
+    const heartRate = Number(snapshot.heartRate);
+    const profVol =
+      !classStarted &&
+      Number.isFinite(heartRate) &&
+      heartRate >= HALLUCINATION_HEART_THRESHOLD_BPM
+        ? 1
         : 0;
 
-    this.setParameter("proffesorVol", proffesorVol);
+    this.setHallucinationProfessorVolume(profVol);
+  }
+
+  setHallucinationProfessorVolume(value) {
+    this.setParameter("profVol", value);
+  }
+
+  updateRealProfessorTrigger(snapshot) {
+    if (snapshot.classStarted !== true || this.realProfessorTriggered) {
+      return;
+    }
+
+    this.realProfessorTriggered = true;
+    this.setHallucinationProfessorVolume(0);
+    this.setParameter("realProfTrigger", 1);
+    window.setTimeout(() => {
+      this.setParameter("realProfTrigger", 0);
+    }, TRIGGER_RESET_MS);
+  }
+
+  updateRealProfessorHallwayVolume(snapshot) {
+    if (
+      !snapshot.classroomHallway?.hasEntered ||
+      this.classroomHallwayVolumeRaised
+    ) {
+      return;
+    }
+
+    this.classroomHallwayVolumeRaised = true;
+    this.setParameter("realProfVol", 0.5);
+  }
+
+  updateRealProfessorNear(snapshot) {
+    const near = clamp(snapshot.classroomHallway?.progress ?? 0, 0, 1);
+    this.setParameter("realProfNear", near);
   }
 
   setParameter(name, value) {

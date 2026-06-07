@@ -10,5 +10,9 @@
   {
     "id": "breathLoop",
     "file": "media\\breathLoop.wav"
+  },
+  {
+    "id": "realProfVoice",
+    "file": "media\\realProfVoice.mp3"
   }
 ]

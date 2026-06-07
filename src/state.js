@@ -21,6 +21,8 @@ export class SimulationState {
     this.videoTime = 0;
     this.videoDuration = 0;
     this.timeRemaining = null;
+    this.hasEnteredClassroomHallway = false;
+    this.classroomHallwayProgress = 0;
     this.runUnlocked = false;
     this.quietCorridorActive = false;
     this.previousQuietCorridorActive = false;
@@ -45,6 +47,7 @@ export class SimulationState {
     this.timeRemaining = this.videoDuration
       ? Math.max(0, this.videoDuration - this.videoTime)
       : null;
+    this.updateClassroomHallway();
     this.runUnlocked = this.isRunUnlocked(video);
     this.updateQuietCorridor(deltaSeconds);
     if (!this.runUnlocked) {
@@ -94,6 +97,23 @@ export class SimulationState {
         this.quietCorridorExitMessageSeconds - deltaSeconds
       );
     }
+  }
+
+  updateClassroomHallway() {
+    const entrySeconds = this.config.classroomHallway.entrySeconds;
+    this.hasEnteredClassroomHallway = this.videoTime >= entrySeconds;
+
+    if (!this.hasEnteredClassroomHallway || !this.videoDuration) {
+      this.classroomHallwayProgress = 0;
+      return;
+    }
+
+    const hallwayDuration = Math.max(this.videoDuration - entrySeconds, 0.001);
+    this.classroomHallwayProgress = clamp(
+      (this.videoTime - entrySeconds) / hallwayDuration,
+      0,
+      1
+    );
   }
 
   updateOverloadElapsed(deltaSeconds) {
@@ -411,6 +431,10 @@ export class SimulationState {
     );
   }
 
+  getTimeUntilClassStartSeconds() {
+    return this.getClassStartSeconds() - this.getCurrentClockSeconds();
+  }
+
   getSnapshot() {
     return {
       elapsedClockSeconds: this.elapsedClockSeconds,
@@ -424,7 +448,15 @@ export class SimulationState {
       videoTime: this.videoTime,
       videoDuration: this.videoDuration,
       timeRemaining: this.timeRemaining,
+      currentClockSeconds: this.getCurrentClockSeconds(),
+      classStartSeconds: this.getClassStartSeconds(),
+      timeUntilClassStart: this.getTimeUntilClassStartSeconds(),
+      classStarted: this.getTimeUntilClassStartSeconds() <= 0,
       runUnlocked: this.runUnlocked,
+      classroomHallway: {
+        hasEntered: this.hasEnteredClassroomHallway,
+        progress: this.classroomHallwayProgress
+      },
       quietCorridor: {
         active: this.quietCorridorActive,
         blocksRunning: this.shouldBlockRunning()

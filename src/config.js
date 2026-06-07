@@ -107,6 +107,9 @@ export const CONFIG = {
     exitMessage: "you can run now.",
     exitMessageDurationSeconds: 3
   },
+  classroomHallway: {
+    entrySeconds: 321
+  },
   heart: {
     baseBpm: 80,
     idleMinBpm: 75,
