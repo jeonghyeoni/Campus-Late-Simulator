@@ -18,6 +18,7 @@ export class AudioEngine {
     this.patcher = null;
     this.lastSnapshotVideoTime = null;
     this.punchTriggered = false;
+    this.bgmTriggered = false;
     this.professorParamsInitialized = false;
     this.realProfessorTriggered = false;
     this.classroomHallwayVolumeRaised = false;
@@ -397,8 +398,27 @@ export class AudioEngine {
     this.setParameter("runIntensity", snapshot.runIntensity);
     this.setParameter("playbackSpeed", snapshot.playbackSpeed);
     this.setParameter("overloadActive", snapshot.overload?.active ? 1 : 0);
+    this.updateBgmTrigger(snapshot);
     this.updatePunchTrigger(snapshot);
     this.updateProfessorVoice(snapshot);
+  }
+
+  updateBgmTrigger(snapshot) {
+    if (snapshot.runUnlocked === false) {
+      this.bgmTriggered = false;
+      this.setParameter("bgmTrigger", 0);
+      return;
+    }
+
+    if (snapshot.runUnlocked !== true || this.bgmTriggered) {
+      return;
+    }
+
+    this.bgmTriggered = true;
+    this.setParameter("bgmTrigger", 1);
+    window.setTimeout(() => {
+      this.setParameter("bgmTrigger", 0);
+    }, TRIGGER_RESET_MS);
   }
 
   updatePunchTrigger(snapshot) {
