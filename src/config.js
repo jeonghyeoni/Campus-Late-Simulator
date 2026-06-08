@@ -96,7 +96,7 @@ export const CONFIG = {
       },
       {
         title: "Subway Surfers Main Theme",
-        file: "media\\bgm\\Subway Surfers Main Theme Music [OFFICIAL] - Marco Masri.mp3"
+        file: "media\\bgm\\SUBWAY SURFERS (Main Theme).mp3"
       },
       {
         title: "Eurodance Hyperpop",
