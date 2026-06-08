@@ -36,10 +36,30 @@
           <section class="hud-card hud-card--music" aria-label="Music player">
             <span class="hud-label">MUSIC</span>
             <div class="music-row">
-              <button id="musicPrevButton" class="music-button" type="button" aria-label="Previous BGM track">◂◂</button>
-              <span id="musicTitle" class="music-title">----</span>
-              <button id="musicNextButton" class="music-button" type="button" aria-label="Next BGM track">▸▸</button>
+              <button id="musicPrevButton" class="music-button music-button--prev" type="button" aria-label="Previous BGM track">
+                <span class="music-skip-icon" aria-hidden="true">
+                  <span class="music-skip-bar"></span>
+                  <span class="music-skip-triangle"></span>
+                </span>
+              </button>
+              <button
+                id="musicMenuButton"
+                class="music-title-button"
+                type="button"
+                aria-expanded="false"
+                aria-controls="musicTrackList"
+              >
+                <span id="musicTitle" class="music-title">----</span>
+                <span class="music-chevron" aria-hidden="true"></span>
+              </button>
+              <button id="musicNextButton" class="music-button music-button--next" type="button" aria-label="Next BGM track">
+                <span class="music-skip-icon" aria-hidden="true">
+                  <span class="music-skip-triangle"></span>
+                  <span class="music-skip-bar"></span>
+                </span>
+              </button>
             </div>
+            <div id="musicTrackList" class="music-track-list" role="listbox" aria-label="BGM track list" hidden></div>
           </section>
 
           <section class="hud-card hud-card--status" aria-label="Movement status">

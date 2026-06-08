@@ -31,6 +31,8 @@ const motionQrCanvas = document.querySelector("#motionQrCanvas");
 const motionControllerUrl = document.querySelector("#motionControllerUrl");
 const musicPrevButton = document.querySelector("#musicPrevButton");
 const musicNextButton = document.querySelector("#musicNextButton");
+const musicMenuButton = document.querySelector("#musicMenuButton");
+const musicTrackList = document.querySelector("#musicTrackList");
 const musicTitle = document.querySelector("#musicTitle");
 
 const keyboardInput = new KeyboardRunInput(CONFIG, sceneContainer);
@@ -91,6 +93,51 @@ function renderMusicPlayer() {
   musicTitle.textContent = track?.title ?? "NO TRACK";
   musicPrevButton.disabled = !hasTracks;
   musicNextButton.disabled = !hasTracks;
+  musicMenuButton.disabled = !hasTracks;
+  musicTrackList.replaceChildren(
+    ...tracks.map((bgmTrack, index) => {
+      const item = document.createElement("button");
+      item.className = "music-track-item";
+      item.type = "button";
+      item.setAttribute("role", "option");
+      item.dataset.selected = index === selectedBgmTrackIndex ? "true" : "false";
+      item.setAttribute(
+        "aria-selected",
+        index === selectedBgmTrackIndex ? "true" : "false"
+      );
+      item.textContent = bgmTrack.title ?? `Track ${index + 1}`;
+      item.addEventListener("click", () => selectBgmTrackByIndex(index));
+      return item;
+    })
+  );
+}
+
+function setMusicMenuOpen(open) {
+  musicMenuButton.setAttribute("aria-expanded", open ? "true" : "false");
+  musicTrackList.hidden = !open;
+}
+
+function toggleMusicMenu() {
+  if (!getBgmTracks().length) {
+    return;
+  }
+
+  setMusicMenuOpen(musicTrackList.hidden);
+}
+
+function selectBgmTrackByIndex(index) {
+  const tracks = getBgmTracks();
+  if (!tracks[index]) {
+    return;
+  }
+
+  selectedBgmTrackIndex = index;
+  renderMusicPlayer();
+  setMusicMenuOpen(false);
+
+  audioEngine.setBgmTrack(getSelectedBgmTrack()).catch((error) => {
+    console.warn("Unable to switch BGM track.", error);
+  });
 }
 
 function selectBgmTrack(direction) {
@@ -101,11 +148,7 @@ function selectBgmTrack(direction) {
 
   selectedBgmTrackIndex =
     (selectedBgmTrackIndex + direction + tracks.length) % tracks.length;
-  renderMusicPlayer();
-
-  audioEngine.setBgmTrack(getSelectedBgmTrack()).catch((error) => {
-    console.warn("Unable to switch BGM track.", error);
-  });
+  selectBgmTrackByIndex(selectedBgmTrackIndex);
 }
 
 function tick(now) {
@@ -310,6 +353,24 @@ startButton.addEventListener("click", startExperience);
 retryButton.addEventListener("click", retryExperience);
 musicPrevButton.addEventListener("click", () => selectBgmTrack(-1));
 musicNextButton.addEventListener("click", () => selectBgmTrack(1));
+musicMenuButton.addEventListener("click", toggleMusicMenu);
+document.addEventListener("click", (event) => {
+  if (
+    musicTrackList.hidden ||
+    event.target === musicMenuButton ||
+    musicMenuButton.contains(event.target) ||
+    musicTrackList.contains(event.target)
+  ) {
+    return;
+  }
+
+  setMusicMenuOpen(false);
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    setMusicMenuOpen(false);
+  }
+});
 
 videoScene.video.addEventListener("error", () => {
   videoUnavailable = true;
