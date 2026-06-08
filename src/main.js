@@ -34,6 +34,8 @@ const musicNextButton = document.querySelector("#musicNextButton");
 const musicMenuButton = document.querySelector("#musicMenuButton");
 const musicTrackList = document.querySelector("#musicTrackList");
 const musicTitle = document.querySelector("#musicTitle");
+const musicVolumeSlider = document.querySelector("#musicVolumeSlider");
+const musicVolumeValue = document.querySelector("#musicVolumeValue");
 
 const keyboardInput = new KeyboardRunInput(CONFIG, sceneContainer);
 const tdInput = new TdInputRunInput(CONFIG);
@@ -53,6 +55,7 @@ let previousTime = performance.now();
 let started = false;
 let videoUnavailable = false;
 let selectedBgmTrackIndex = 0;
+let bgmVolume = clampVolume(CONFIG.audio.bgmVolume ?? 0.7);
 
 window.campusLateSimulator = {
   getState: () => simulationState.getSnapshot(),
@@ -83,6 +86,22 @@ function getBgmTracks() {
 function getSelectedBgmTrack() {
   const tracks = getBgmTracks();
   return tracks[selectedBgmTrackIndex] ?? null;
+}
+
+function clampVolume(value) {
+  const volume = Number(value);
+  return Number.isFinite(volume) ? Math.min(1, Math.max(0, volume)) : 0.7;
+}
+
+function renderBgmVolume() {
+  musicVolumeSlider.value = String(bgmVolume);
+  musicVolumeValue.textContent = String(Math.round(bgmVolume * 100));
+}
+
+function setBgmVolume(value) {
+  bgmVolume = clampVolume(value);
+  renderBgmVolume();
+  audioEngine.setBgmVolume(bgmVolume);
 }
 
 function renderMusicPlayer() {
@@ -328,6 +347,8 @@ function renderRetryButton(snapshot) {
 
 populateQualitySelect();
 renderMusicPlayer();
+renderBgmVolume();
+audioEngine.setBgmVolume(bgmVolume);
 
 qualitySelect.addEventListener("change", () => {
   if (started) {
@@ -354,6 +375,9 @@ retryButton.addEventListener("click", retryExperience);
 musicPrevButton.addEventListener("click", () => selectBgmTrack(-1));
 musicNextButton.addEventListener("click", () => selectBgmTrack(1));
 musicMenuButton.addEventListener("click", toggleMusicMenu);
+musicVolumeSlider.addEventListener("input", () => {
+  setBgmVolume(musicVolumeSlider.value);
+});
 document.addEventListener("click", (event) => {
   if (
     musicTrackList.hidden ||

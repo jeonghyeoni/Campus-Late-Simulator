@@ -24,6 +24,7 @@ export class AudioEngine {
     this.classroomHallwayVolumeRaised = false;
     this.pendingBgmTrack = null;
     this.bgmTrackPromise = null;
+    this.bgmVolume = clamp(config?.bgmVolume ?? 0.7, 0, 1);
   }
 
   async start() {
@@ -75,6 +76,7 @@ export class AudioEngine {
     });
     this.logDeviceDataBuffers();
     this.initializeProfessorParameters();
+    this.setBgmVolume(this.bgmVolume);
 
     this.device.node.connect(this.audioContext.destination);
     await this.loadDataBufferDependencies();
@@ -387,6 +389,17 @@ export class AudioEngine {
       });
       return false;
     }
+  }
+
+  setBgmVolume(value) {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) {
+      return false;
+    }
+
+    const volume = clamp(numericValue, 0, 1);
+    this.bgmVolume = volume;
+    return this.setParameter("bgmVol", volume);
   }
 
   updateFromSnapshot(snapshot) {

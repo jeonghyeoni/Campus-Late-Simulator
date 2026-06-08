@@ -8,15 +8,15 @@
     "file": "media\\profVoice.mp3"
   },
   {
-    "id": "realProfVoice",
-    "file": "media\\realProfVoice.mp3"
-  },
-  {
     "id": "bgm",
     "file": "media\\monume-house-509469.mp3"
   },
   {
     "id": "punch",
     "file": "media\\punch.mp3"
+  },
+  {
+    "id": "realProfVoice",
+    "file": "media\\realProfVoice.mp3"
   }
 ]
