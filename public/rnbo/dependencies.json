@@ -1,15 +1,11 @@
 [
   {
-    "id": "punch",
-    "file": "media\\punch.mp3"
+    "id": "breathLoop",
+    "file": "media\\breathLoop.wav"
   },
   {
     "id": "profVoice",
     "file": "media\\profVoice.mp3"
-  },
-  {
-    "id": "breathLoop",
-    "file": "media\\breathLoop.wav"
   },
   {
     "id": "realProfVoice",
@@ -18,5 +14,9 @@
   {
     "id": "bgm",
     "file": "media\\monume-house-509469.mp3"
+  },
+  {
+    "id": "punch",
+    "file": "media\\punch.mp3"
   }
 ]
