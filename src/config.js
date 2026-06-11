@@ -159,9 +159,9 @@ export const CONFIG = {
     overloadRecoveryThresholdBpm: 130,
     sampleIntervalSeconds: 1,
     activeSampleIntervalSeconds: 1.5,
-    activeRiseBpmPerSample: 1.3,
+    activeRiseBpmPerSample: 2,
     recoveryBpmPerSample: 2,
-    overloadRecoveryBpmPerSample: 3,
+    overloadRecoveryBpmPerSample: 1.7,
     activeJitterBpm: 2,
     recoveryJitterBpm: 1
   },
