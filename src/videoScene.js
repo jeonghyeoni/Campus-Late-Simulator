@@ -14,6 +14,9 @@ export class VideoScene {
     this.lastObservedVideoTime = 0;
     this.lastVideoProgressAt = performance.now();
     this.lastStallRecoveryAt = 0;
+    this.lastVideoTransform = "";
+    this.lastVideoFilter = "";
+    this.lastVideoFilterUpdateAt = 0;
 
     this.video = this.createVideoElement();
     this.video.className = "scene-video";
@@ -149,7 +152,7 @@ export class VideoScene {
     this.lastPlaybackRateUpdateAt = now;
   }
 
-  update(deltaSeconds, snapshot) {
+  update(deltaSeconds, snapshot, performanceSnapshot = null) {
     const amount = expSmoothingFactor(
       this.config.flatView.smoothing,
       deltaSeconds
@@ -158,7 +161,7 @@ export class VideoScene {
     this.currentOffsetX = lerp(this.currentOffsetX, this.targetOffsetX, amount);
     this.currentOffsetY = lerp(this.currentOffsetY, this.targetOffsetY, amount);
     this.flushPlaybackSpeedIfDue();
-    this.updateTransform(snapshot);
+    this.updateTransform(snapshot, performanceSnapshot);
     this.recoverPlaybackStall(snapshot);
   }
 
@@ -245,8 +248,10 @@ export class VideoScene {
     }
   }
 
-  updateTransform(snapshot) {
+  updateTransform(snapshot, performanceSnapshot = null) {
     const overload = snapshot?.overload;
+    const somatic = snapshot?.somaticEffect ?? {};
+    const somaticConfig = this.config.somaticEffect ?? {};
     const scale = overload?.active
       ? this.config.overload.scale
       : this.config.flatView.scale;
@@ -255,9 +260,112 @@ export class VideoScene {
           overload.elapsedSeconds * Math.PI * 2 * this.config.overload.swayHz
         ) * this.config.overload.swayPercent
       : 0;
+    const overloadShakeX = overload?.active
+      ? Math.sin(overload.elapsedSeconds * Math.PI * 2 * 5.6) *
+        Math.sin(overload.elapsedSeconds * Math.PI * 2 * 2.3) *
+        (this.config.overload.shakeXPercent ?? 0)
+      : 0;
+    const overloadShakeY = overload?.active
+      ? Math.cos(overload.elapsedSeconds * Math.PI * 2 * 4.7) *
+        Math.sin(overload.elapsedSeconds * Math.PI * 2 * 1.9) *
+        (this.config.overload.shakeYPercent ?? 0)
+      : 0;
+    const elapsedSeconds = snapshot?.elapsedClockSeconds ?? 0;
+    const heartbeatZoom =
+      (somatic.heartbeatPulse ?? 0) * (somaticConfig.heartbeatZoom ?? 0);
+    const breathY =
+      (somatic.breathPulse ?? 0) * (somaticConfig.breathSwayPercent ?? 0);
+    const panicSway =
+      (somatic.panic ?? 0) * (somaticConfig.panicSwayPercent ?? 0);
+    const panicX =
+      Math.sin(elapsedSeconds * 17.3) *
+      Math.sin(elapsedSeconds * 5.7) *
+      panicSway;
+    const panicY =
+      Math.cos(elapsedSeconds * 13.1) *
+      Math.sin(elapsedSeconds * 4.3) *
+      panicSway;
     const endingBlur = snapshot?.endingEffect?.blurPx ?? 0;
+    const symptomBlur = somatic.blurPx ?? 0;
+    const totalBlur =
+      (endingBlur + symptomBlur) * this.getAdaptiveBlurScale(performanceSnapshot);
+    const symptomActive = (somatic.intensity ?? 0) > 0.015;
 
-    this.video.style.transform = `translate3d(${this.currentOffsetX}%, ${this.currentOffsetY + overloadY}%, 0) scale(${scale})`;
-    this.video.style.filter = endingBlur > 0 ? `blur(${endingBlur}px)` : "";
+    const translateX = this.currentOffsetX + overloadShakeX + panicX;
+    const translateY =
+      this.currentOffsetY + overloadY + overloadShakeY + breathY + panicY;
+    const transform = `translate3d(${translateX.toFixed(3)}%, ${translateY.toFixed(3)}%, 0) scale(${(scale + heartbeatZoom).toFixed(4)})`;
+    const filter =
+      totalBlur > 0.01 || symptomActive
+        ? [
+            totalBlur > 0.01 ? `blur(${totalBlur.toFixed(2)}px)` : "",
+            symptomActive
+              ? `brightness(${(1 - (somatic.dim ?? 0)).toFixed(3)})`
+              : "",
+            symptomActive
+              ? `contrast(${(1 + (somatic.contrast ?? 0)).toFixed(3)})`
+              : "",
+            symptomActive
+              ? `saturate(${(1 - (somatic.desaturation ?? 0)).toFixed(3)})`
+              : ""
+          ]
+            .filter(Boolean)
+            .join(" ")
+        : "";
+
+    if (transform !== this.lastVideoTransform) {
+      this.video.style.transform = transform;
+      this.lastVideoTransform = transform;
+    }
+
+    if (this.shouldUpdateFilter(filter, performanceSnapshot)) {
+      this.video.style.filter = filter;
+      this.lastVideoFilter = filter;
+      this.lastVideoFilterUpdateAt = performance.now();
+    }
+  }
+
+  shouldUpdateFilter(nextFilter, performanceSnapshot) {
+    if (nextFilter === this.lastVideoFilter) {
+      return false;
+    }
+
+    if (!nextFilter || !this.lastVideoFilter) {
+      return true;
+    }
+
+    const now = performance.now();
+    const filterUpdateHz = this.getAdaptiveFilterUpdateHz(performanceSnapshot);
+    const intervalMs = 1000 / Math.max(1, filterUpdateHz);
+
+    return now - this.lastVideoFilterUpdateAt >= intervalMs;
+  }
+
+  getAdaptiveFilterUpdateHz(performanceSnapshot) {
+    const lagLevel = performanceSnapshot?.lagLevel ?? 0;
+
+    if (lagLevel >= 2) {
+      return this.config.video.criticalFilterUpdateHz ?? 10;
+    }
+
+    if (lagLevel >= 1) {
+      return this.config.video.laggedFilterUpdateHz ?? 16;
+    }
+
+    return this.config.video.filterUpdateHz ?? 24;
+  }
+
+  getAdaptiveBlurScale(performanceSnapshot) {
+    const lagLevel = performanceSnapshot?.lagLevel ?? 0;
+
+    if (lagLevel >= 2) {
+      return this.config.video.criticalBlurScale ?? 0.45;
+    }
+
+    if (lagLevel >= 1) {
+      return this.config.video.laggedBlurScale ?? 0.75;
+    }
+
+    return 1;
   }
 }

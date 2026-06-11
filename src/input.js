@@ -850,20 +850,22 @@ export class RunInputManager {
   }
 
   update(deltaSeconds) {
-    this.keyboardInput.update(deltaSeconds);
-    this.tdInput.update(deltaSeconds);
-    this.motionInput.update(deltaSeconds);
-
     if (this.mode === "keyboard") {
+      this.keyboardInput.update(deltaSeconds);
       this.runIntensity = this.keyboardInput.getRunIntensity();
       return;
     }
 
+    if (this.config.bridge.keyboardFallback) {
+      this.keyboardInput.update(deltaSeconds);
+    }
+
+    const activeSensorInput = this.getActiveSensorInput();
+    activeSensorInput.update(deltaSeconds);
+
     const fallbackIntensity = this.config.bridge.keyboardFallback
       ? this.keyboardInput.getRunIntensity()
       : 0;
-    const activeSensorInput =
-      this.mode === "phone-motion" ? this.motionInput : this.tdInput;
     this.runIntensity = Math.max(
       activeSensorInput.getRunIntensity(),
       fallbackIntensity
@@ -882,8 +884,7 @@ export class RunInputManager {
     const fallbackIntensity = this.config.bridge.keyboardFallback
       ? this.keyboardInput.getPlaybackRunIntensity()
       : 0;
-    const activeSensorInput =
-      this.mode === "phone-motion" ? this.motionInput : this.tdInput;
+    const activeSensorInput = this.getActiveSensorInput();
     return Math.max(
       activeSensorInput.getPlaybackRunIntensity(),
       fallbackIntensity
@@ -908,8 +909,7 @@ export class RunInputManager {
       return this.keyboardInput.isRunningIntent();
     }
 
-    const activeSensorInput =
-      this.mode === "phone-motion" ? this.motionInput : this.tdInput;
+    const activeSensorInput = this.getActiveSensorInput();
     return (
       activeSensorInput.isRunningIntent() ||
       (this.config.bridge.keyboardFallback &&
@@ -958,6 +958,10 @@ export class RunInputManager {
 
   getMode() {
     return this.mode;
+  }
+
+  getActiveSensorInput() {
+    return this.mode === "phone-motion" ? this.motionInput : this.tdInput;
   }
 
   getConnectionSnapshot() {

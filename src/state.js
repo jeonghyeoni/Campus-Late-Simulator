@@ -4,6 +4,7 @@ export class SimulationState {
   constructor(config, inputSource) {
     this.config = config;
     this.inputSource = inputSource;
+    this.snapshot = this.createSnapshotObject();
     this.reset();
   }
 
@@ -29,6 +30,7 @@ export class SimulationState {
     this.quietCorridorExitMessageSeconds = 0;
     this.overloadActive = false;
     this.overloadElapsedSeconds = 0;
+    this.somaticEffect = this.createEmptySomaticEffect();
     this.endingEffect = {
       active: false,
       progress: 0,
@@ -72,6 +74,7 @@ export class SimulationState {
       this.isRunningIntentActive();
 
     this.updateHeartRate(deltaSeconds);
+    this.updateSomaticEffect(deltaSeconds);
     this.updateDistanceFromVideo(video);
     this.updateEndingEffect(video);
     this.updatePlaybackSpeed(deltaSeconds);
@@ -270,6 +273,151 @@ export class SimulationState {
     return min + Math.random() * (max - min);
   }
 
+  createEmptySomaticEffect() {
+    return {
+      intensity: 0,
+      tunnel: 0,
+      oxygenDebt: 0,
+      blackNoise: 0,
+      panic: 0,
+      heartbeatPulse: 0,
+      breathPulse: 0,
+      blurPx: 0,
+      dim: 0,
+      desaturation: 0,
+      contrast: 0
+    };
+  }
+
+  createSnapshotObject() {
+    return {
+      elapsedClockSeconds: 0,
+      runIntensity: 0,
+      isRunning: false,
+      inputActive: false,
+      playbackSpeed: this.config.run.idleSpeed,
+      targetPlaybackSpeed: this.config.run.idleSpeed,
+      heartRate: this.config.heart.baseBpm,
+      distanceMeters: this.config.distance.startMeters,
+      videoTime: 0,
+      videoDuration: 0,
+      timeRemaining: null,
+      currentClockSeconds: 0,
+      classStartSeconds: 0,
+      timeUntilClassStart: 0,
+      classStarted: false,
+      runUnlocked: false,
+      classroomHallway: {
+        hasEntered: false,
+        progress: 0
+      },
+      quietCorridor: {
+        active: false,
+        blocksRunning: false
+      },
+      overload: {
+        active: false,
+        recoveryThresholdBpm: this.config.heart.overloadRecoveryThresholdBpm,
+        elapsedSeconds: 0
+      },
+      somaticEffect: this.createEmptySomaticEffect(),
+      endingEffect: {
+        active: false,
+        progress: 0,
+        blurPx: 0
+      },
+      outcome: null,
+      message: ""
+    };
+  }
+
+  updateSomaticEffect(deltaSeconds) {
+    const effectConfig = this.config.somaticEffect;
+    if (!effectConfig?.enabled) {
+      this.somaticEffect = this.createEmptySomaticEffect();
+      return;
+    }
+
+    const maxBpm = effectConfig.maxBpm ?? this.config.heart.maxBpm;
+    const intensityTarget = this.getHeartBandIntensity(
+      effectConfig.onsetBpm,
+      maxBpm
+    );
+    const tunnelTarget = this.getHeartBandIntensity(
+      effectConfig.tunnelBpm,
+      maxBpm
+    );
+    const oxygenTarget = this.getHeartBandIntensity(
+      effectConfig.oxygenDebtBpm,
+      maxBpm
+    );
+    const blackNoiseTarget = this.getHeartBandIntensity(
+      effectConfig.blackNoiseBpm ?? 140,
+      effectConfig.blackNoiseMaxBpm ?? 160
+    );
+    const panicTarget = this.getHeartBandIntensity(
+      effectConfig.panicBpm,
+      maxBpm
+    );
+    const amount = expSmoothingFactor(
+      effectConfig.smoothing ?? 4,
+      deltaSeconds
+    );
+
+    this.somaticEffect.intensity = lerp(
+      this.somaticEffect.intensity,
+      intensityTarget,
+      amount
+    );
+    this.somaticEffect.tunnel = lerp(
+      this.somaticEffect.tunnel,
+      tunnelTarget,
+      amount
+    );
+    this.somaticEffect.oxygenDebt = lerp(
+      this.somaticEffect.oxygenDebt,
+      oxygenTarget,
+      amount
+    );
+    this.somaticEffect.blackNoise = lerp(
+      this.somaticEffect.blackNoise,
+      blackNoiseTarget,
+      amount
+    );
+    this.somaticEffect.panic = lerp(
+      this.somaticEffect.panic,
+      panicTarget,
+      amount
+    );
+
+    const heartHz = clamp(this.heartRate / 60, 0.8, 3.1);
+    const beatPhase = this.elapsedClockSeconds * Math.PI * 2 * heartHz;
+    const breathPhase =
+      this.elapsedClockSeconds *
+      Math.PI *
+      2 *
+      (effectConfig.breathHz ?? 0.62);
+    const beat = Math.pow(Math.max(0, Math.sin(beatPhase)), 2.4);
+
+    this.somaticEffect.heartbeatPulse = this.somaticEffect.intensity * beat;
+    this.somaticEffect.breathPulse =
+      this.somaticEffect.intensity * Math.sin(breathPhase);
+    this.somaticEffect.blurPx =
+      (effectConfig.maxBlurPx ?? 0) * this.somaticEffect.oxygenDebt;
+    this.somaticEffect.dim =
+      (effectConfig.maxDim ?? 0) * this.somaticEffect.tunnel;
+    this.somaticEffect.desaturation =
+      (effectConfig.maxDesaturation ?? 0) * this.somaticEffect.oxygenDebt;
+    this.somaticEffect.contrast =
+      (effectConfig.maxContrast ?? 0) * this.somaticEffect.panic;
+  }
+
+  getHeartBandIntensity(startBpm, endBpm) {
+    const range = Math.max(endBpm - startBpm, 1);
+    const linear = clamp((this.heartRate - startBpm) / range, 0, 1);
+    return linear * linear * (3 - 2 * linear);
+  }
+
   getCurrentMaxRunSpeed() {
     const isTouchInput = this.inputSource.prefersTouch?.() ?? false;
     return isTouchInput
@@ -436,39 +584,42 @@ export class SimulationState {
   }
 
   getSnapshot() {
-    return {
-      elapsedClockSeconds: this.elapsedClockSeconds,
-      runIntensity: this.runIntensity,
-      isRunning: this.isRunning,
-      inputActive: this.inputActive,
-      playbackSpeed: this.playbackSpeed,
-      targetPlaybackSpeed: this.targetPlaybackSpeed,
-      heartRate: this.heartRate,
-      distanceMeters: this.distanceMeters,
-      videoTime: this.videoTime,
-      videoDuration: this.videoDuration,
-      timeRemaining: this.timeRemaining,
-      currentClockSeconds: this.getCurrentClockSeconds(),
-      classStartSeconds: this.getClassStartSeconds(),
-      timeUntilClassStart: this.getTimeUntilClassStartSeconds(),
-      classStarted: this.getTimeUntilClassStartSeconds() <= 0,
-      runUnlocked: this.runUnlocked,
-      classroomHallway: {
-        hasEntered: this.hasEnteredClassroomHallway,
-        progress: this.classroomHallwayProgress
-      },
-      quietCorridor: {
-        active: this.quietCorridorActive,
-        blocksRunning: this.shouldBlockRunning()
-      },
-      overload: {
-        active: this.isOverloaded(),
-        recoveryThresholdBpm: this.config.heart.overloadRecoveryThresholdBpm,
-        elapsedSeconds: this.overloadElapsedSeconds
-      },
-      endingEffect: this.endingEffect,
-      outcome: this.outcome,
-      message: this.message
-    };
+    const snapshot = this.snapshot;
+    const currentClockSeconds = this.getCurrentClockSeconds();
+    const classStartSeconds = this.getClassStartSeconds();
+    const timeUntilClassStart = classStartSeconds - currentClockSeconds;
+
+    snapshot.elapsedClockSeconds = this.elapsedClockSeconds;
+    snapshot.runIntensity = this.runIntensity;
+    snapshot.isRunning = this.isRunning;
+    snapshot.inputActive = this.inputActive;
+    snapshot.playbackSpeed = this.playbackSpeed;
+    snapshot.targetPlaybackSpeed = this.targetPlaybackSpeed;
+    snapshot.heartRate = this.heartRate;
+    snapshot.distanceMeters = this.distanceMeters;
+    snapshot.videoTime = this.videoTime;
+    snapshot.videoDuration = this.videoDuration;
+    snapshot.timeRemaining = this.timeRemaining;
+    snapshot.currentClockSeconds = currentClockSeconds;
+    snapshot.classStartSeconds = classStartSeconds;
+    snapshot.timeUntilClassStart = timeUntilClassStart;
+    snapshot.classStarted = timeUntilClassStart <= 0;
+    snapshot.runUnlocked = this.runUnlocked;
+    snapshot.classroomHallway.hasEntered = this.hasEnteredClassroomHallway;
+    snapshot.classroomHallway.progress = this.classroomHallwayProgress;
+    snapshot.quietCorridor.active = this.quietCorridorActive;
+    snapshot.quietCorridor.blocksRunning = this.shouldBlockRunning();
+    snapshot.overload.active = this.isOverloaded();
+    snapshot.overload.recoveryThresholdBpm =
+      this.config.heart.overloadRecoveryThresholdBpm;
+    snapshot.overload.elapsedSeconds = this.overloadElapsedSeconds;
+    Object.assign(snapshot.somaticEffect, this.somaticEffect);
+    snapshot.endingEffect.active = this.endingEffect.active;
+    snapshot.endingEffect.progress = this.endingEffect.progress;
+    snapshot.endingEffect.blurPx = this.endingEffect.blurPx;
+    snapshot.outcome = this.outcome;
+    snapshot.message = this.message;
+
+    return snapshot;
   }
 }

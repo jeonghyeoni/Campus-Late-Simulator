@@ -56,9 +56,15 @@ let started = false;
 let videoUnavailable = false;
 let selectedBgmTrackIndex = 0;
 let bgmVolume = clampVolume(CONFIG.audio.bgmVolume ?? 0.7);
+let lastStateEventAt = 0;
+let lastConnectionRenderAt = 0;
+let lastRetryButtonVisible = null;
+let frameTimeEmaMs = 16.7;
+let lagLevel = 0;
+const mainRenderCache = new Map();
 
 window.campusLateSimulator = {
-  getState: () => simulationState.getSnapshot(),
+  getState: () => cloneSnapshot(simulationState.getSnapshot()),
   getInputSource: () => inputSource,
   getTdInput: () => tdInput,
   getMotionInput: () => motionInput,
@@ -90,7 +96,11 @@ function getSelectedBgmTrack() {
 
 function clampVolume(value) {
   const volume = Number(value);
-  return Number.isFinite(volume) ? Math.min(1, Math.max(0, volume)) : 0.7;
+  return Number.isFinite(volume) ? clampValue(volume, 0, 1) : 0.7;
+}
+
+function clampValue(value, min, max) {
+  return Math.min(max, Math.max(min, value));
 }
 
 function renderBgmVolume() {
@@ -171,7 +181,9 @@ function selectBgmTrack(direction) {
 }
 
 function tick(now) {
-  const deltaSeconds = Math.min((now - previousTime) / 1000, 0.05);
+  const rawDeltaMs = now - previousTime;
+  const performanceSnapshot = updatePerformanceSnapshot(rawDeltaMs);
+  const deltaSeconds = Math.min(rawDeltaMs / 1000, 0.05);
   previousTime = now;
 
   if (started) {
@@ -181,27 +193,85 @@ function tick(now) {
   const snapshot = simulationState.getSnapshot();
 
   videoScene.setPlaybackSpeed(snapshot.playbackSpeed);
-  videoScene.update(deltaSeconds, snapshot);
+  videoScene.update(deltaSeconds, snapshot, performanceSnapshot);
   audioEngine.updateFromSnapshot(snapshot);
-  overlayUi.render(snapshot);
+  overlayUi.render(snapshot, performanceSnapshot);
   renderRetryButton(snapshot);
   renderTdInputConnection();
 
-  window.dispatchEvent(
-    new CustomEvent("campus-simulator-state", {
-      detail: snapshot
-    })
-  );
+  dispatchStateEventIfDue(now, snapshot);
 
   requestAnimationFrame(tick);
 }
 
-function renderTdInputConnection() {
+function updatePerformanceSnapshot(frameMs) {
+  const performanceConfig = CONFIG.performance ?? {};
+  const smoothing = clampValue(performanceConfig.frameSmoothing ?? 0.08, 0, 1);
+  const warningMs = performanceConfig.frameWarningMs ?? 28;
+  const criticalMs = performanceConfig.frameCriticalMs ?? 45;
+  const recoveryMs = performanceConfig.frameRecoveryMs ?? 22;
+
+  if (Number.isFinite(frameMs) && frameMs > 0) {
+    frameTimeEmaMs += (frameMs - frameTimeEmaMs) * smoothing;
+  }
+
+  if (frameTimeEmaMs >= criticalMs) {
+    lagLevel = 2;
+  } else if (frameTimeEmaMs >= warningMs) {
+    lagLevel = Math.max(lagLevel, 1);
+  } else if (frameTimeEmaMs <= recoveryMs) {
+    lagLevel = 0;
+  }
+
+  return {
+    frameMs: frameTimeEmaMs,
+    lagLevel
+  };
+}
+
+function dispatchStateEventIfDue(now, snapshot) {
+  const stateEventHz = CONFIG.performance?.stateEventHz ?? 8;
+  const intervalMs = 1000 / Math.max(1, stateEventHz);
+
+  if (now - lastStateEventAt < intervalMs) {
+    return;
+  }
+
+  lastStateEventAt = now;
+  window.dispatchEvent(
+    new CustomEvent("campus-simulator-state", {
+      detail: cloneSnapshot(snapshot)
+    })
+  );
+}
+
+function cloneSnapshot(snapshot) {
+  return {
+    ...snapshot,
+    classroomHallway: { ...snapshot.classroomHallway },
+    quietCorridor: { ...snapshot.quietCorridor },
+    overload: { ...snapshot.overload },
+    somaticEffect: { ...snapshot.somaticEffect },
+    endingEffect: { ...snapshot.endingEffect }
+  };
+}
+
+function renderTdInputConnection(force = false) {
+  const now = performance.now();
+  const intervalMs =
+    1000 / Math.max(1, CONFIG.performance?.connectionUiHz ?? 12);
+
+  if (!force && now - lastConnectionRenderAt < intervalMs) {
+    return;
+  }
+
+  lastConnectionRenderAt = now;
+
   const mode = inputSource.getMode();
   const sensorMode = mode === "phone" || mode === "watch" || mode === "phone-motion";
   const motionMode = mode === "phone-motion";
-  tdInputConnection.hidden = !sensorMode;
-  startPanel.dataset.inputMode = mode;
+  setHidden("tdInputHidden", tdInputConnection, !sensorMode);
+  setDatasetValue("startInputMode", startPanel, "inputMode", mode);
 
   if (!sensorMode) {
     renderStartButton();
@@ -209,25 +279,36 @@ function renderTdInputConnection() {
   }
 
   const connection = inputSource.getConnectionSnapshot();
-  tdInputConnection.dataset.status = connection.status;
-  tdInputStatus.textContent = connection.statusText;
-  tdInputRoomId.textContent = connection.roomId || "----";
-  tdInputServerHost.textContent =
-    connection.serverHost || getHostFromWebSocketUrl(CONFIG.bridge.wsUrl);
-  tdInputUdpPort.textContent = connection.udpPort || "----";
-  tdInputServerLabel.hidden = motionMode;
-  tdInputServerHost.hidden = motionMode;
-  tdInputUdpLabel.hidden = motionMode;
-  tdInputUdpPort.hidden = motionMode;
-  motionQrPanel.hidden = !motionMode || !connection.controllerUrl;
-  tdInputInstructions.textContent = motionMode
-    ? "Scan this QR code with your phone browser."
-    : "Enter this Server IP and UDP Port in TDInput.";
+  setDatasetValue("tdInputStatusDataset", tdInputConnection, "status", connection.status);
+  setText("tdInputStatus", tdInputStatus, connection.statusText);
+  setText("tdInputRoomId", tdInputRoomId, connection.roomId || "----");
+  setText(
+    "tdInputServerHost",
+    tdInputServerHost,
+    connection.serverHost || getHostFromWebSocketUrl(CONFIG.bridge.wsUrl)
+  );
+  setText("tdInputUdpPort", tdInputUdpPort, connection.udpPort || "----");
+  setHidden("tdInputServerLabelHidden", tdInputServerLabel, motionMode);
+  setHidden("tdInputServerHostHidden", tdInputServerHost, motionMode);
+  setHidden("tdInputUdpLabelHidden", tdInputUdpLabel, motionMode);
+  setHidden("tdInputUdpPortHidden", tdInputUdpPort, motionMode);
+  setHidden(
+    "motionQrPanelHidden",
+    motionQrPanel,
+    !motionMode || !connection.controllerUrl
+  );
+  setText(
+    "tdInputInstructions",
+    tdInputInstructions,
+    motionMode
+      ? "Scan this QR code with your phone browser."
+      : "Enter this Server IP and UDP Port in TDInput."
+  );
 
   if (motionMode && connection.controllerUrl) {
     renderMotionQr(connection.controllerUrl);
-    motionControllerUrl.href = connection.controllerUrl;
-    motionControllerUrl.textContent = connection.controllerUrl;
+    setAttribute("motionControllerHref", motionControllerUrl, "href", connection.controllerUrl);
+    setText("motionControllerUrl", motionControllerUrl, connection.controllerUrl);
   } else {
     renderedMotionQrUrl = "";
   }
@@ -267,8 +348,8 @@ function renderStartButton(connection = null) {
   }
 
   if (videoUnavailable) {
-    startButton.textContent = "VIDEO ERROR";
-    startButton.disabled = true;
+    setText("startButtonText", startButton, "VIDEO ERROR");
+    setDisabled("startButtonDisabled", startButton, true);
     return;
   }
 
@@ -281,11 +362,11 @@ function renderStartButton(connection = null) {
     ? connectionSnapshot.readyToStart
     : inputSource.isReadyToStart();
 
-  startButton.disabled = !readyToStart;
-  startButton.textContent = getStartButtonText(
-    mode,
-    connectionSnapshot,
-    readyToStart
+  setDisabled("startButtonDisabled", startButton, !readyToStart);
+  setText(
+    "startButtonText",
+    startButton,
+    getStartButtonText(mode, connectionSnapshot, readyToStart)
   );
 }
 
@@ -342,7 +423,59 @@ async function retryExperience() {
 }
 
 function renderRetryButton(snapshot) {
-  retryButton.hidden = !snapshot.outcome;
+  const visible = Boolean(snapshot.outcome);
+
+  if (visible === lastRetryButtonVisible) {
+    return;
+  }
+
+  retryButton.hidden = !visible;
+  lastRetryButtonVisible = visible;
+}
+
+function setText(key, element, value) {
+  if (!element || mainRenderCache.get(key) === value) {
+    return;
+  }
+
+  element.textContent = value;
+  mainRenderCache.set(key, value);
+}
+
+function setHidden(key, element, value) {
+  if (!element || mainRenderCache.get(key) === value) {
+    return;
+  }
+
+  element.hidden = value;
+  mainRenderCache.set(key, value);
+}
+
+function setDisabled(key, element, value) {
+  if (!element || mainRenderCache.get(key) === value) {
+    return;
+  }
+
+  element.disabled = value;
+  mainRenderCache.set(key, value);
+}
+
+function setDatasetValue(key, element, name, value) {
+  if (!element || mainRenderCache.get(key) === value) {
+    return;
+  }
+
+  element.dataset[name] = value;
+  mainRenderCache.set(key, value);
+}
+
+function setAttribute(key, element, name, value) {
+  if (!element || mainRenderCache.get(key) === value) {
+    return;
+  }
+
+  element.setAttribute(name, value);
+  mainRenderCache.set(key, value);
 }
 
 populateQualitySelect();
@@ -365,7 +498,7 @@ inputModeControls.forEach((control) => {
     }
 
     inputSource.setMode(control.value);
-    renderTdInputConnection();
+    renderTdInputConnection(true);
     renderStartButton();
   });
 });

@@ -7,6 +7,14 @@ const defaultBridgeWsUrl = isLocalBridgeHost
 
 export const CONFIG = {
   viewMode: "flat",
+  performance: {
+    stateEventHz: 8,
+    connectionUiHz: 12,
+    frameWarningMs: 28,
+    frameCriticalMs: 45,
+    frameRecoveryMs: 22,
+    frameSmoothing: 0.08
+  },
   bridge: {
     wsUrl: import.meta.env.VITE_BRIDGE_WS_URL ?? defaultBridgeWsUrl,
     controllerBaseUrl:
@@ -61,6 +69,11 @@ export const CONFIG = {
     muted: false,
     playbackRateUpdateHz: 20,
     playbackRateMinDelta: 0.015,
+    filterUpdateHz: 24,
+    laggedFilterUpdateHz: 16,
+    criticalFilterUpdateHz: 10,
+    laggedBlurScale: 0.75,
+    criticalBlurScale: 0.45,
     stallRecovery: {
       enabled: true,
       stalledAfterMs: 900,
@@ -167,9 +180,43 @@ export const CONFIG = {
   },
   overload: {
     scale: 1.22,
-    swayPercent: 2.1,
-    swayHz: 0.5,
+    swayPercent: 3.8,
+    swayHz: 0.72,
+    shakeXPercent: 1.1,
+    shakeYPercent: 0.85,
     blurPx: 4
+  },
+  somaticEffect: {
+    enabled: true,
+    onsetBpm: 95,
+    tunnelBpm: 120,
+    oxygenDebtBpm: 138,
+    blackNoiseBpm: 136,
+    blackNoiseMaxBpm: 160,
+    panicBpm: 154,
+    maxBpm: 176,
+    smoothing: 4.2,
+    breathHz: 0.62,
+    maxBlurPx: 1.9,
+    maxDim: 0.18,
+    maxDesaturation: 0.34,
+    maxContrast: 0.24,
+    blackNoiseFrameHz: 12,
+    laggedBlackNoiseFrameHz: 8,
+    criticalBlackNoiseFrameHz: 5,
+    blackNoiseTextureSize: 512,
+    laggedBlackNoiseTextureSize: 384,
+    criticalBlackNoiseTextureSize: 256,
+    blackNoiseMinDensity: 0.015,
+    blackNoiseMaxDensity: 0.86,
+    blackNoisePixelAlpha: 0.58,
+    blackNoiseJitterPx: 16,
+    styleUpdateHz: 30,
+    laggedStyleUpdateHz: 20,
+    criticalStyleUpdateHz: 12,
+    heartbeatZoom: 0.018,
+    breathSwayPercent: 0.58,
+    panicSwayPercent: 0.45
   },
   ending: {
     durationSeconds: 0.35,

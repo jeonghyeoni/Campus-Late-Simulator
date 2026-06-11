@@ -78,6 +78,88 @@ button {
   opacity: 1;
 }
 
+.somatic-overlay {
+  --somatic-opacity: 0;
+  --somatic-tunnel-alpha: 0;
+  --somatic-edge-alpha: 0;
+  --somatic-pulse-alpha: 0;
+  --somatic-oxygen-alpha: 0;
+  --somatic-panic-alpha: 0;
+  --somatic-heartbeat: 0;
+
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: var(--somatic-opacity);
+  background:
+    radial-gradient(ellipse at 50% 52%, transparent 0 42%, rgb(6 7 9 / var(--somatic-tunnel-alpha)) 72%, rgb(0 0 0 / var(--somatic-edge-alpha)) 100%),
+    linear-gradient(90deg, rgb(93 190 255 / var(--somatic-oxygen-alpha)) 0%, transparent 11%, transparent 89%, rgb(255 83 97 / var(--somatic-oxygen-alpha)) 100%);
+  transition: opacity 260ms ease;
+}
+
+.somatic-black-noise {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  display: block;
+  image-rendering: pixelated;
+  mix-blend-mode: multiply;
+}
+
+.somatic-overlay::before,
+.somatic-overlay::after {
+  position: absolute;
+  inset: -5%;
+  content: "";
+  pointer-events: none;
+}
+
+.somatic-overlay::before {
+  opacity: var(--somatic-pulse-alpha);
+  background:
+    radial-gradient(ellipse at 50% 54%, transparent 0 36%, rgb(255 83 97 / 24%) 43%, transparent 56%),
+    radial-gradient(ellipse at 50% 50%, transparent 0 58%, rgb(255 255 255 / 12%) 60%, transparent 66%);
+  mix-blend-mode: screen;
+  transform: scale(calc(1 + var(--somatic-heartbeat) * 0.045));
+  transform-origin: center center;
+}
+
+.somatic-overlay::after {
+  opacity: var(--somatic-panic-alpha);
+  background-image:
+    radial-gradient(circle at 12% 28%, rgb(255 255 255 / 42%) 0 1px, transparent 2px),
+    radial-gradient(circle at 82% 18%, rgb(119 242 188 / 26%) 0 1px, transparent 2px),
+    radial-gradient(circle at 74% 72%, rgb(255 83 97 / 30%) 0 1px, transparent 2px),
+    radial-gradient(circle at 24% 78%, rgb(255 255 255 / 28%) 0 1px, transparent 2px),
+    repeating-linear-gradient(90deg, transparent 0 18px, rgb(255 255 255 / 4%) 19px, transparent 20px);
+  background-size:
+    138px 117px,
+    164px 149px,
+    181px 153px,
+    129px 171px,
+    auto;
+  mix-blend-mode: screen;
+  animation: somatic-static 820ms steps(2, end) infinite;
+}
+
+@keyframes somatic-static {
+  0% {
+    transform: translate3d(-0.35%, 0.25%, 0);
+  }
+
+  50% {
+    transform: translate3d(0.28%, -0.2%, 0);
+  }
+
+  100% {
+    transform: translate3d(-0.18%, 0.15%, 0);
+  }
+}
+
 .hud {
   position: absolute;
   inset: 0;

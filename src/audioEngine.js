@@ -14,6 +14,7 @@ export class AudioEngine {
     this.startPromise = null;
     this.ready = false;
     this.parameterCache = new Map();
+    this.parameterValueCache = new Map();
     this.missingParameters = new Set();
     this.patcher = null;
     this.lastSnapshotVideoTime = null;
@@ -21,6 +22,7 @@ export class AudioEngine {
     this.bgmTriggered = false;
     this.professorParamsInitialized = false;
     this.realProfessorTriggered = false;
+    this.hallucinationProfessorLocked = false;
     this.classroomHallwayVolumeRaised = false;
     this.pendingBgmTrack = null;
     this.bgmTrackPromise = null;
@@ -485,8 +487,9 @@ export class AudioEngine {
   }
 
   resetProfessorTriggersIfNeeded(snapshot) {
-    if (snapshot.classStarted === false) {
+    if (snapshot.classStarted === false && !snapshot.outcome) {
       this.realProfessorTriggered = false;
+      this.hallucinationProfessorLocked = false;
     }
 
     if (!snapshot.classroomHallway?.hasEntered) {
@@ -499,9 +502,16 @@ export class AudioEngine {
 
   updateHallucinationProfessorVolume(snapshot) {
     const classStarted = snapshot.classStarted === true;
+    const gameEnded = Boolean(snapshot.outcome);
+
+    if (gameEnded || classStarted || this.hallucinationProfessorLocked) {
+      this.hallucinationProfessorLocked = true;
+      this.setHallucinationProfessorVolume(0);
+      return;
+    }
+
     const heartRate = Number(snapshot.heartRate);
     const profVol =
-      !classStarted &&
       Number.isFinite(heartRate) &&
       heartRate >= HALLUCINATION_HEART_THRESHOLD_BPM
         ? 1
@@ -545,18 +555,66 @@ export class AudioEngine {
   }
 
   setParameter(name, value) {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) {
+      return false;
+    }
+
+    if (this.shouldSkipParameterUpdate(name, numericValue)) {
+      return true;
+    }
+
     const parameter = this.getParameter(name);
-    if (!parameter || !Number.isFinite(value)) {
+    if (!parameter) {
       return false;
     }
 
     try {
-      parameter.value = value;
+      parameter.value = numericValue;
+      this.parameterValueCache.set(name, numericValue);
       return true;
     } catch (error) {
       console.warn(`Unable to set RNBO parameter "${name}".`, error);
       return false;
     }
+  }
+
+  shouldSkipParameterUpdate(name, value) {
+    if (!this.parameterValueCache.has(name)) {
+      return false;
+    }
+
+    const previousValue = this.parameterValueCache.get(name);
+    if (Object.is(previousValue, value)) {
+      return true;
+    }
+
+    const epsilon = this.getParameterUpdateEpsilon(name);
+    return epsilon > 0 && Math.abs(previousValue - value) <= epsilon;
+  }
+
+  getParameterUpdateEpsilon(name) {
+    if (name === "heartRate") {
+      return 0.2;
+    }
+
+    if (name === "runIntensity") {
+      return 0.004;
+    }
+
+    if (name === "playbackSpeed") {
+      return 0.005;
+    }
+
+    if (name === "realProfNear") {
+      return 0.01;
+    }
+
+    if (name === "bgmVol") {
+      return 0.001;
+    }
+
+    return 0;
   }
 
   getParameter(name) {
