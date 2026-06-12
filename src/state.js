@@ -334,11 +334,30 @@ export class SimulationState {
   updateSomaticEffect(deltaSeconds) {
     const effectConfig = this.config.somaticEffect;
     if (!effectConfig?.enabled) {
-      this.somaticEffect = this.createEmptySomaticEffect();
+      this.resetSomaticEffectValues();
       return;
     }
 
     const maxBpm = effectConfig.maxBpm ?? this.config.heart.maxBpm;
+    const firstEffectBpm = Math.min(
+      effectConfig.onsetBpm ?? maxBpm,
+      effectConfig.tunnelBpm ?? maxBpm,
+      effectConfig.oxygenDebtBpm ?? maxBpm,
+      effectConfig.blackNoiseBpm ?? 140,
+      effectConfig.panicBpm ?? maxBpm
+    );
+
+    if (this.heartRate <= firstEffectBpm) {
+      if (this.isSomaticEffectAtRest()) {
+        return;
+      }
+
+      if (this.isSomaticEffectNearlyIdle()) {
+        this.resetSomaticEffectValues();
+        return;
+      }
+    }
+
     const intensityTarget = this.getHeartBandIntensity(
       effectConfig.onsetBpm,
       maxBpm
@@ -410,6 +429,55 @@ export class SimulationState {
       (effectConfig.maxDesaturation ?? 0) * this.somaticEffect.oxygenDebt;
     this.somaticEffect.contrast =
       (effectConfig.maxContrast ?? 0) * this.somaticEffect.panic;
+  }
+
+  isSomaticEffectAtRest() {
+    const effect = this.somaticEffect;
+    return (
+      effect.intensity === 0 &&
+      effect.tunnel === 0 &&
+      effect.oxygenDebt === 0 &&
+      effect.blackNoise === 0 &&
+      effect.panic === 0 &&
+      effect.heartbeatPulse === 0 &&
+      effect.breathPulse === 0 &&
+      effect.blurPx === 0 &&
+      effect.dim === 0 &&
+      effect.desaturation === 0 &&
+      effect.contrast === 0
+    );
+  }
+
+  isSomaticEffectNearlyIdle() {
+    const effect = this.somaticEffect;
+    const epsilon = 0.001;
+    return (
+      Math.abs(effect.intensity) <= epsilon &&
+      Math.abs(effect.tunnel) <= epsilon &&
+      Math.abs(effect.oxygenDebt) <= epsilon &&
+      Math.abs(effect.blackNoise) <= epsilon &&
+      Math.abs(effect.panic) <= epsilon &&
+      Math.abs(effect.heartbeatPulse) <= epsilon &&
+      Math.abs(effect.breathPulse) <= epsilon &&
+      Math.abs(effect.blurPx) <= epsilon &&
+      Math.abs(effect.dim) <= epsilon &&
+      Math.abs(effect.desaturation) <= epsilon &&
+      Math.abs(effect.contrast) <= epsilon
+    );
+  }
+
+  resetSomaticEffectValues() {
+    this.somaticEffect.intensity = 0;
+    this.somaticEffect.tunnel = 0;
+    this.somaticEffect.oxygenDebt = 0;
+    this.somaticEffect.blackNoise = 0;
+    this.somaticEffect.panic = 0;
+    this.somaticEffect.heartbeatPulse = 0;
+    this.somaticEffect.breathPulse = 0;
+    this.somaticEffect.blurPx = 0;
+    this.somaticEffect.dim = 0;
+    this.somaticEffect.desaturation = 0;
+    this.somaticEffect.contrast = 0;
   }
 
   getHeartBandIntensity(startBpm, endBpm) {

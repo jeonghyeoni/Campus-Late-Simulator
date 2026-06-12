@@ -93,6 +93,7 @@ button {
   overflow: hidden;
   pointer-events: none;
   opacity: var(--somatic-opacity);
+  contain: paint;
   background:
     radial-gradient(ellipse at 50% 52%, transparent 0 42%, rgb(6 7 9 / var(--somatic-tunnel-alpha)) 72%, rgb(0 0 0 / var(--somatic-edge-alpha)) 100%),
     linear-gradient(90deg, rgb(93 190 255 / var(--somatic-oxygen-alpha)) 0%, transparent 11%, transparent 89%, rgb(255 83 97 / var(--somatic-oxygen-alpha)) 100%);
@@ -108,6 +109,7 @@ button {
   display: block;
   image-rendering: pixelated;
   mix-blend-mode: multiply;
+  contain: paint;
 }
 
 .somatic-overlay::before,
@@ -143,6 +145,10 @@ button {
     129px 171px,
     auto;
   mix-blend-mode: screen;
+  animation: none;
+}
+
+.somatic-overlay[data-active="true"]::after {
   animation: somatic-static 820ms steps(2, end) infinite;
 }
 

@@ -13,16 +13,28 @@ export class OverlayUi {
     this.somaticOverlay = document.querySelector("#somaticOverlay");
     this.somaticNoiseCanvas = document.querySelector("#somaticNoiseCanvas");
     this.somaticNoiseContext =
-      this.somaticNoiseCanvas?.getContext("2d") ?? null;
-    this.blackNoiseTextureCanvas = null;
-    this.blackNoiseTextureContext = null;
-    this.blackNoiseTextureImageData = null;
+      this.somaticNoiseCanvas?.getContext("2d", {
+        alpha: true,
+        desynchronized: true
+      }) ?? null;
+    this.disableBlackNoiseSmoothing();
+    this.blackNoiseLayerFrames = null;
+    this.blackNoiseLayerSize = 0;
+    this.blackNoiseLayerCount = 0;
+    this.blackNoiseFrameCount = 0;
+    this.blackNoiseFrameIndex = 0;
+    this.blackNoiseLayerCache = new Map();
+    this.blackNoisePatternCache = new Map();
     this.blackNoiseOffsetX = 0;
     this.blackNoiseOffsetY = 0;
     this.blackNoiseSeed = 0x9e3779b9;
     this.lastBlackNoiseRenderAt = 0;
     this.blackNoiseVisible = false;
+    this.blackNoiseCanvasWidth = 0;
+    this.blackNoiseCanvasHeight = 0;
+    this.blackNoiseCanvasResizeObserver = null;
     this.lastSomaticStyleRenderAt = 0;
+    this.somaticStyleInactive = false;
     this.renderCache = new Map();
     this.displayedMessage = "";
     this.messageClearTimer = null;
@@ -32,6 +44,8 @@ export class OverlayUi {
       config.clock.classStartMinutes,
       config.clock.classStartSeconds
     );
+    this.observeBlackNoiseCanvasSize();
+    this.scheduleBlackNoisePrewarm();
   }
 
   render(snapshot, performanceSnapshot = null) {
@@ -82,26 +96,38 @@ export class OverlayUi {
 
     const effect = snapshot.somaticEffect ?? {};
     const intensity = this.clampCssNumber(effect.intensity);
+    const blackNoise = this.clampCssNumber(effect.blackNoise);
+
+    if (intensity <= 0.004 && blackNoise <= 0.004) {
+      this.renderInactiveSomaticStyle();
+      this.clearBlackNoiseCanvas();
+      return;
+    }
+
     const tunnel = this.clampCssNumber(effect.tunnel);
     const oxygenDebt = this.clampCssNumber(effect.oxygenDebt);
-    const blackNoise = this.clampCssNumber(effect.blackNoise);
     const panic = this.clampCssNumber(effect.panic);
     const heartbeat = this.clampCssNumber(effect.heartbeatPulse);
 
     this.renderSomaticStyle(
-      {
-        intensity,
-        tunnel,
-        oxygenDebt,
-        panic,
-        heartbeat
-      },
+      intensity,
+      tunnel,
+      oxygenDebt,
+      panic,
+      heartbeat,
       performanceSnapshot
     );
     this.renderBlackNoise(blackNoise, performanceSnapshot);
   }
 
-  renderSomaticStyle(effect, performanceSnapshot) {
+  renderSomaticStyle(
+    intensity,
+    tunnel,
+    oxygenDebt,
+    panic,
+    heartbeat,
+    performanceSnapshot
+  ) {
     const config = this.config.somaticEffect ?? {};
     const now = performance.now();
     const styleHz = this.getAdaptiveNumber(
@@ -111,62 +137,117 @@ export class OverlayUi {
       performanceSnapshot
     );
     const intervalMs = 1000 / Math.max(1, styleHz);
-    const forceInactive = effect.intensity <= 0.004;
+    const forceInactive = intensity <= 0.004;
 
     if (!forceInactive && now - this.lastSomaticStyleRenderAt < intervalMs) {
       return;
     }
 
     this.lastSomaticStyleRenderAt = now;
+    this.somaticStyleInactive = false;
     this.setDatasetValue(
       "somaticActive",
       this.somaticOverlay,
       "active",
-      effect.intensity > 0.02 ? "true" : "false"
+      intensity > 0.02 ? "true" : "false"
     );
     this.setStyleProperty(
       "somaticOpacity",
       this.somaticOverlay,
       "--somatic-opacity",
-      this.formatCssNumber(effect.intensity * 0.96)
+      this.formatCssNumber(intensity * 0.96)
     );
     this.setStyleProperty(
       "somaticTunnel",
       this.somaticOverlay,
       "--somatic-tunnel-alpha",
-      this.formatCssNumber(effect.tunnel * 0.72)
+      this.formatCssNumber(tunnel * 0.72)
     );
     this.setStyleProperty(
       "somaticEdge",
       this.somaticOverlay,
       "--somatic-edge-alpha",
-      this.formatCssNumber(effect.tunnel * 0.9)
+      this.formatCssNumber(tunnel * 0.9)
     );
     this.setStyleProperty(
       "somaticPulse",
       this.somaticOverlay,
       "--somatic-pulse-alpha",
-      this.formatCssNumber(
-        (effect.heartbeat * 0.34 + effect.panic * 0.12) * effect.intensity
-      )
+      this.formatCssNumber((heartbeat * 0.34 + panic * 0.12) * intensity)
     );
     this.setStyleProperty(
       "somaticOxygen",
       this.somaticOverlay,
       "--somatic-oxygen-alpha",
-      this.formatCssNumber(effect.oxygenDebt * 0.24)
+      this.formatCssNumber(oxygenDebt * 0.24)
     );
     this.setStyleProperty(
       "somaticPanic",
       this.somaticOverlay,
       "--somatic-panic-alpha",
-      this.formatCssNumber(effect.panic * 0.3)
+      this.formatCssNumber(panic * 0.3)
     );
     this.setStyleProperty(
       "somaticHeartbeat",
       this.somaticOverlay,
       "--somatic-heartbeat",
-      this.formatCssNumber(effect.heartbeat)
+      this.formatCssNumber(heartbeat)
+    );
+  }
+
+  renderInactiveSomaticStyle() {
+    if (this.somaticStyleInactive) {
+      return;
+    }
+
+    this.somaticStyleInactive = true;
+    this.setDatasetValue(
+      "somaticActive",
+      this.somaticOverlay,
+      "active",
+      "false"
+    );
+    this.setStyleProperty(
+      "somaticOpacity",
+      this.somaticOverlay,
+      "--somatic-opacity",
+      "0.000"
+    );
+    this.setStyleProperty(
+      "somaticTunnel",
+      this.somaticOverlay,
+      "--somatic-tunnel-alpha",
+      "0.000"
+    );
+    this.setStyleProperty(
+      "somaticEdge",
+      this.somaticOverlay,
+      "--somatic-edge-alpha",
+      "0.000"
+    );
+    this.setStyleProperty(
+      "somaticPulse",
+      this.somaticOverlay,
+      "--somatic-pulse-alpha",
+      "0.000"
+    );
+    this.setStyleProperty(
+      "somaticOxygen",
+      this.somaticOverlay,
+      "--somatic-oxygen-alpha",
+      "0.000"
+    );
+    this.setStyleProperty(
+      "somaticPanic",
+      this.somaticOverlay,
+      "--somatic-panic-alpha",
+      "0.000"
+    );
+    this.setStyleProperty(
+      "somaticHeartbeat",
+      this.somaticOverlay,
+      "--somatic-heartbeat",
+      "0.000"
     );
   }
 
@@ -196,14 +277,12 @@ export class OverlayUi {
 
     this.lastBlackNoiseRenderAt = now;
 
-    const rect = this.somaticNoiseCanvas.getBoundingClientRect();
+    const width = this.blackNoiseCanvasWidth;
+    const height = this.blackNoiseCanvasHeight;
 
-    if (rect.width <= 0 || rect.height <= 0) {
+    if (width <= 0 || height <= 0) {
       return;
     }
-
-    const width = Math.ceil(rect.width);
-    const height = Math.ceil(rect.height);
 
     if (
       this.somaticNoiseCanvas.width !== width ||
@@ -211,41 +290,181 @@ export class OverlayUi {
     ) {
       this.somaticNoiseCanvas.width = width;
       this.somaticNoiseCanvas.height = height;
+      this.disableBlackNoiseSmoothing();
     }
 
     this.drawBlackNoiseTexture(intensity, width, height, performanceSnapshot);
   }
 
-  ensureBlackNoiseTexture(size) {
+  observeBlackNoiseCanvasSize() {
+    if (!this.somaticNoiseCanvas) {
+      return;
+    }
+
+    const updateSize = () => {
+      const rect = this.somaticNoiseCanvas.getBoundingClientRect();
+      this.blackNoiseCanvasWidth = Math.ceil(rect.width);
+      this.blackNoiseCanvasHeight = Math.ceil(rect.height);
+    };
+
+    updateSize();
+
+    if (typeof ResizeObserver === "function") {
+      this.blackNoiseCanvasResizeObserver = new ResizeObserver(updateSize);
+      this.blackNoiseCanvasResizeObserver.observe(this.somaticNoiseCanvas);
+    } else {
+      window.addEventListener("resize", updateSize);
+    }
+  }
+
+  ensureBlackNoiseTexture(size, config) {
+    const layerCount = Math.max(
+      1,
+      Math.round(config.blackNoiseLayerCount ?? 4)
+    );
+    const frameCount = Math.max(
+      1,
+      Math.round(config.blackNoiseFrameCount ?? 4)
+    );
+
     if (
-      this.blackNoiseTextureCanvas?.width === size &&
-      this.blackNoiseTextureCanvas?.height === size &&
-      this.blackNoiseTextureImageData?.width === size &&
-      this.blackNoiseTextureImageData?.height === size
+      this.blackNoiseLayerFrames &&
+      this.blackNoiseLayerSize === size &&
+      this.blackNoiseLayerCount === layerCount &&
+      this.blackNoiseFrameCount === frameCount
     ) {
       return;
     }
 
-    this.blackNoiseTextureCanvas = document.createElement("canvas");
-    this.blackNoiseTextureCanvas.width = size;
-    this.blackNoiseTextureCanvas.height = size;
-    this.blackNoiseTextureContext =
-      this.blackNoiseTextureCanvas.getContext("2d");
+    const maxDensity = this.clampCssNumber(
+      config.blackNoiseMaxDensity ?? 0.86
+    );
+    const layerDensity =
+      maxDensity >= 1
+        ? 1
+        : 1 - Math.pow(1 - maxDensity, 1 / layerCount);
+    const alpha = Math.round(
+      255 * this.clampCssNumber(config.blackNoisePixelAlpha ?? 0.58)
+    );
+    const cacheKey = [
+      size,
+      layerCount,
+      frameCount,
+      maxDensity.toFixed(3),
+      alpha
+    ].join(":");
+    const cachedFrames = this.blackNoiseLayerCache.get(cacheKey);
 
-    if (!this.blackNoiseTextureContext) {
-      this.blackNoiseTextureImageData = null;
+    if (cachedFrames) {
+      this.blackNoiseLayerFrames = cachedFrames;
+      this.blackNoiseLayerSize = size;
+      this.blackNoiseLayerCount = layerCount;
+      this.blackNoiseFrameCount = frameCount;
+      this.blackNoiseFrameIndex %= frameCount;
       return;
     }
 
-    this.blackNoiseTextureImageData =
-      this.blackNoiseTextureContext.createImageData(size, size);
+    this.blackNoiseLayerFrames = Array.from({ length: frameCount }, () =>
+      Array.from({ length: layerCount }, () =>
+        this.createBlackNoiseLayerCanvas(size, layerDensity, alpha)
+      )
+    );
+    this.blackNoiseLayerCache.set(cacheKey, this.blackNoiseLayerFrames);
+    this.blackNoiseLayerSize = size;
+    this.blackNoiseLayerCount = layerCount;
+    this.blackNoiseFrameCount = frameCount;
+    this.blackNoiseFrameIndex %= frameCount;
+  }
 
-    const data = this.blackNoiseTextureImageData.data;
+  scheduleBlackNoisePrewarm() {
+    const config = this.config.somaticEffect ?? {};
+    if (!config.enabled) {
+      return;
+    }
+
+    const sizes = [
+      config.blackNoiseTextureSize ?? 512,
+      config.laggedBlackNoiseTextureSize ?? 384,
+      config.criticalBlackNoiseTextureSize ?? 256
+    ]
+      .map((size) => Math.round(Math.max(64, size)))
+      .filter((size, index, allSizes) => allSizes.indexOf(size) === index);
+
+    const schedule =
+      window.requestIdleCallback?.bind(window) ??
+      ((callback) => window.setTimeout(callback, 300));
+
+    const prewarmNextSize = () => {
+      const size = sizes.shift();
+      if (!size) {
+        return;
+      }
+
+      this.ensureBlackNoiseTexture(size, config);
+      this.prewarmBlackNoisePatterns();
+
+      if (sizes.length) {
+        schedule(prewarmNextSize);
+      }
+    };
+
+    schedule(prewarmNextSize);
+  }
+
+  prewarmBlackNoisePatterns() {
+    if (!this.somaticNoiseContext || !this.blackNoiseLayerFrames) {
+      return;
+    }
+
+    for (const frameLayers of this.blackNoiseLayerFrames) {
+      for (const layerCanvas of frameLayers) {
+        this.getBlackNoisePattern(this.somaticNoiseContext, layerCanvas);
+      }
+    }
+  }
+
+  createBlackNoiseLayerCanvas(size, density, alpha) {
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+
+    const context = canvas.getContext("2d", {
+      alpha: true,
+      willReadFrequently: false
+    });
+    if (!context) {
+      return canvas;
+    }
+
+    const imageData = context.createImageData(size, size);
+    const data = imageData.data;
+    const maxUint32 = 0xffffffff;
+    const densityThreshold = density * maxUint32;
+    let seed = this.blackNoiseSeed >>> 0;
+
     for (let index = 0; index < data.length; index += 4) {
       data[index] = 0;
       data[index + 1] = 0;
       data[index + 2] = 0;
+
+      seed ^= seed << 13;
+      seed ^= seed >>> 17;
+      seed ^= seed << 5;
+
+      if ((seed >>> 0) < densityThreshold) {
+        seed ^= seed << 13;
+        seed ^= seed >>> 17;
+        seed ^= seed << 5;
+        data[index + 3] = Math.round(
+          alpha * (0.62 + ((seed >>> 0) / maxUint32) * 0.38)
+        );
+      }
     }
+
+    this.blackNoiseSeed = seed >>> 0 || 0x9e3779b9;
+    context.putImageData(imageData, 0, 0);
+
+    return canvas;
   }
 
   drawBlackNoiseTexture(intensity, width, height, performanceSnapshot = null) {
@@ -261,14 +480,12 @@ export class OverlayUi {
         )
       )
     );
-    this.ensureBlackNoiseTexture(textureSize);
+    this.ensureBlackNoiseTexture(textureSize, config);
 
     const context = this.somaticNoiseContext;
-    const textureContext = this.blackNoiseTextureContext;
-    const textureCanvas = this.blackNoiseTextureCanvas;
-    const imageData = this.blackNoiseTextureImageData;
+    const layerFrames = this.blackNoiseLayerFrames;
 
-    if (!context || !textureContext || !textureCanvas || !imageData) {
+    if (!context || !layerFrames) {
       return;
     }
 
@@ -278,33 +495,18 @@ export class OverlayUi {
       minDensity +
       (maxDensity - minDensity) *
         Math.pow(this.clampCssNumber(intensity), 1.2);
-    const alpha = Math.round(
-      255 * this.clampCssNumber(config.blackNoisePixelAlpha ?? 0.58)
+    const layerProgress = Math.min(
+      this.blackNoiseLayerCount,
+      Math.max(
+        0,
+        (density / Math.max(0.001, maxDensity)) * this.blackNoiseLayerCount
+      )
     );
-    const maxUint32 = 0xffffffff;
-    const densityThreshold = density * maxUint32;
-    const data = imageData.data;
-    let seed = this.blackNoiseSeed >>> 0;
-
-    for (let alphaIndex = 3; alphaIndex < data.length; alphaIndex += 4) {
-      seed ^= seed << 13;
-      seed ^= seed >>> 17;
-      seed ^= seed << 5;
-
-      if ((seed >>> 0) < densityThreshold) {
-        seed ^= seed << 13;
-        seed ^= seed >>> 17;
-        seed ^= seed << 5;
-        data[alphaIndex] = Math.round(
-          alpha * (0.62 + ((seed >>> 0) / maxUint32) * 0.38)
-        );
-      } else {
-        data[alphaIndex] = 0;
-      }
-    }
-
-    this.blackNoiseSeed = seed >>> 0 || 0x9e3779b9;
-    textureContext.putImageData(imageData, 0, 0);
+    const fullLayerCount = Math.floor(layerProgress);
+    const partialLayerAlpha = layerProgress - fullLayerCount;
+    const frameLayers = layerFrames[this.blackNoiseFrameIndex] ?? [];
+    this.blackNoiseFrameIndex =
+      (this.blackNoiseFrameIndex + 1) % Math.max(1, this.blackNoiseFrameCount);
 
     const jitterPx = config.blackNoiseJitterPx ?? 16;
     this.blackNoiseOffsetX =
@@ -318,25 +520,65 @@ export class OverlayUi {
         textureSize) %
       textureSize;
 
-    const pattern = context.createPattern(textureCanvas, "repeat");
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.clearRect(0, 0, width, height);
+    context.save();
+    context.translate(-this.blackNoiseOffsetX, -this.blackNoiseOffsetY);
+    for (let layerIndex = 0; layerIndex < fullLayerCount; layerIndex += 1) {
+      this.drawRepeatedNoiseLayer(
+        context,
+        frameLayers[layerIndex],
+        width,
+        height,
+        textureSize,
+        1
+      );
+    }
+
+    if (partialLayerAlpha > 0.01) {
+      this.drawRepeatedNoiseLayer(
+        context,
+        frameLayers[fullLayerCount],
+        width,
+        height,
+        textureSize,
+        partialLayerAlpha
+      );
+    }
+    context.restore();
+    this.blackNoiseVisible = true;
+  }
+
+  drawRepeatedNoiseLayer(context, layerCanvas, width, height, textureSize, alpha) {
+    if (!layerCanvas || alpha <= 0) {
+      return;
+    }
+
+    const pattern = this.getBlackNoisePattern(context, layerCanvas);
     if (!pattern) {
       return;
     }
 
-    context.setTransform(1, 0, 0, 1, 0, 0);
-    context.imageSmoothingEnabled = false;
-    context.clearRect(0, 0, width, height);
-    context.save();
-    context.translate(-this.blackNoiseOffsetX, -this.blackNoiseOffsetY);
+    context.globalAlpha = Math.min(1, Math.max(0, alpha));
     context.fillStyle = pattern;
-    context.fillRect(
-      this.blackNoiseOffsetX,
-      this.blackNoiseOffsetY,
-      width + textureSize,
-      height + textureSize
-    );
-    context.restore();
-    this.blackNoiseVisible = true;
+    context.fillRect(0, 0, width + textureSize, height + textureSize);
+    context.globalAlpha = 1;
+  }
+
+  getBlackNoisePattern(context, layerCanvas) {
+    if (this.blackNoisePatternCache.has(layerCanvas)) {
+      return this.blackNoisePatternCache.get(layerCanvas);
+    }
+
+    const pattern = context.createPattern(layerCanvas, "repeat");
+    this.blackNoisePatternCache.set(layerCanvas, pattern);
+    return pattern;
+  }
+
+  disableBlackNoiseSmoothing() {
+    if (this.somaticNoiseContext) {
+      this.somaticNoiseContext.imageSmoothingEnabled = false;
+    }
   }
 
   nextBlackNoiseSignedRandom() {

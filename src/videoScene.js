@@ -16,6 +16,7 @@ export class VideoScene {
     this.lastStallRecoveryAt = 0;
     this.lastVideoTransform = "";
     this.lastVideoFilter = "";
+    this.lastVideoWillChange = "";
     this.lastVideoFilterUpdateAt = 0;
     this.pointerBounds = null;
     this.transformSettled = false;
@@ -319,59 +320,65 @@ export class VideoScene {
 
     this.transformSettled = false;
 
-    const overloadY = overloadActive
-      ? Math.sin(
-          overload.elapsedSeconds * Math.PI * 2 * this.config.overload.swayHz
-        ) * this.config.overload.swayPercent
-      : 0;
-    const overloadShakeX = overloadActive
-      ? Math.sin(overload.elapsedSeconds * Math.PI * 2 * 5.6) *
-        Math.sin(overload.elapsedSeconds * Math.PI * 2 * 2.3) *
-        (this.config.overload.shakeXPercent ?? 0)
-      : 0;
-    const overloadShakeY = overloadActive
-      ? Math.cos(overload.elapsedSeconds * Math.PI * 2 * 4.7) *
-        Math.sin(overload.elapsedSeconds * Math.PI * 2 * 1.9) *
-        (this.config.overload.shakeYPercent ?? 0)
-      : 0;
-    const elapsedSeconds = snapshot?.elapsedClockSeconds ?? 0;
+    let overloadY = 0;
+    let overloadShakeX = 0;
+    let overloadShakeY = 0;
+
+    if (overloadActive) {
+      const overloadPhase = overload.elapsedSeconds * Math.PI * 2;
+      overloadY =
+        Math.sin(overloadPhase * this.config.overload.swayHz) *
+        this.config.overload.swayPercent;
+      overloadShakeX =
+        Math.sin(overloadPhase * 5.6) *
+        Math.sin(overloadPhase * 2.3) *
+        (this.config.overload.shakeXPercent ?? 0);
+      overloadShakeY =
+        Math.cos(overloadPhase * 4.7) *
+        Math.sin(overloadPhase * 1.9) *
+        (this.config.overload.shakeYPercent ?? 0);
+    }
+
+    const heartbeatPulse = somatic.heartbeatPulse ?? 0;
     const heartbeatZoom =
-      (somatic.heartbeatPulse ?? 0) * (somaticConfig.heartbeatZoom ?? 0);
+      heartbeatPulse > 0.001
+        ? heartbeatPulse * (somaticConfig.heartbeatZoom ?? 0)
+        : 0;
+    const breathPulse = somatic.breathPulse ?? 0;
     const breathY =
-      (somatic.breathPulse ?? 0) * (somaticConfig.breathSwayPercent ?? 0);
+      Math.abs(breathPulse) > 0.001
+        ? breathPulse * (somaticConfig.breathSwayPercent ?? 0)
+        : 0;
     const panicSway =
       (somatic.panic ?? 0) * (somaticConfig.panicSwayPercent ?? 0);
-    const panicX =
-      Math.sin(elapsedSeconds * 17.3) *
-      Math.sin(elapsedSeconds * 5.7) *
-      panicSway;
-    const panicY =
-      Math.cos(elapsedSeconds * 13.1) *
-      Math.sin(elapsedSeconds * 4.3) *
-      panicSway;
+    let panicX = 0;
+    let panicY = 0;
+
+    if (panicSway > 0.001) {
+      const elapsedSeconds = snapshot?.elapsedClockSeconds ?? 0;
+      panicX =
+        Math.sin(elapsedSeconds * 17.3) *
+        Math.sin(elapsedSeconds * 5.7) *
+        panicSway;
+      panicY =
+        Math.cos(elapsedSeconds * 13.1) *
+        Math.sin(elapsedSeconds * 4.3) *
+        panicSway;
+    }
     const totalBlur =
       (endingBlur + symptomBlur) * this.getAdaptiveBlurScale(performanceSnapshot);
 
     const translateX = this.currentOffsetX + overloadShakeX + panicX;
     const translateY =
       this.currentOffsetY + overloadY + overloadShakeY + breathY + panicY;
-    const filter =
-      totalBlur > 0.01 || symptomActive
-        ? [
-            totalBlur > 0.01 ? `blur(${totalBlur.toFixed(2)}px)` : "",
-            symptomActive
-              ? `brightness(${(1 - (somatic.dim ?? 0)).toFixed(3)})`
-              : "",
-            symptomActive
-              ? `contrast(${(1 + (somatic.contrast ?? 0)).toFixed(3)})`
-              : "",
-            symptomActive
-              ? `saturate(${(1 - (somatic.desaturation ?? 0)).toFixed(3)})`
-              : ""
-          ]
-            .filter(Boolean)
-            .join(" ")
-        : "";
+    let filter = "";
+    if (totalBlur > 0.01) {
+      filter = `blur(${totalBlur.toFixed(2)}px)`;
+    }
+
+    if (symptomActive) {
+      filter += `${filter ? " " : ""}brightness(${(1 - (somatic.dim ?? 0)).toFixed(3)}) contrast(${(1 + (somatic.contrast ?? 0)).toFixed(3)}) saturate(${(1 - (somatic.desaturation ?? 0)).toFixed(3)})`;
+    }
 
     this.applyVideoTransformAndFilter(
       translateX,
@@ -400,6 +407,12 @@ export class VideoScene {
       this.video.style.filter = filter;
       this.lastVideoFilter = filter;
       this.lastVideoFilterUpdateAt = performance.now();
+    }
+
+    const willChange = filter ? "transform, filter" : "transform";
+    if (willChange !== this.lastVideoWillChange) {
+      this.video.style.willChange = willChange;
+      this.lastVideoWillChange = willChange;
     }
   }
 

@@ -207,6 +207,8 @@ export const CONFIG = {
     blackNoiseTextureSize: 512,
     laggedBlackNoiseTextureSize: 384,
     criticalBlackNoiseTextureSize: 256,
+    blackNoiseLayerCount: 4,
+    blackNoiseFrameCount: 4,
     blackNoiseMinDensity: 0.015,
     blackNoiseMaxDensity: 0.86,
     blackNoisePixelAlpha: 0.58,
