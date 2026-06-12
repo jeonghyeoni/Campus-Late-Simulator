@@ -192,6 +192,12 @@ button {
 #app[data-lag-level="2"] .hud-card,
 #app[data-lag-level="1"] .start-panel,
 #app[data-lag-level="2"] .start-panel,
+#app[data-lag-level="1"] .input-mode-picker,
+#app[data-lag-level="2"] .input-mode-picker,
+#app[data-lag-level="1"] .quality-picker,
+#app[data-lag-level="2"] .quality-picker,
+#app[data-lag-level="1"] .start-button,
+#app[data-lag-level="2"] .start-button,
 #app[data-lag-level="1"] .tdinput-panel,
 #app[data-lag-level="2"] .tdinput-panel,
 #app[data-lag-level="1"] .retry-button,
@@ -201,8 +207,8 @@ button {
 
 #app[data-lag-level="1"] .hud-card {
   background:
-    linear-gradient(135deg, rgb(24 31 34 / 78%), rgb(7 10 12 / 82%)),
-    rgb(8 10 11 / 72%);
+    linear-gradient(135deg, rgb(24 31 34 / 62%), rgb(7 10 12 / 66%)),
+    rgb(8 10 11 / 58%);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 12%),
     0 12px 26px rgb(0 0 0 / 24%);
@@ -210,11 +216,27 @@ button {
 
 #app[data-lag-level="2"] .hud-card {
   background:
-    linear-gradient(135deg, rgb(19 25 28 / 88%), rgb(7 10 12 / 90%)),
-    rgb(8 10 11 / 82%);
+    linear-gradient(135deg, rgb(19 25 28 / 70%), rgb(7 10 12 / 74%)),
+    rgb(8 10 11 / 66%);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 10%),
     0 8px 18px rgb(0 0 0 / 20%);
+}
+
+#app[data-lag-level="1"] .input-mode-picker,
+#app[data-lag-level="1"] .quality-picker,
+#app[data-lag-level="1"] .start-button,
+#app[data-lag-level="1"] .tdinput-panel,
+#app[data-lag-level="1"] .retry-button {
+  background: rgb(6 7 8 / 64%);
+}
+
+#app[data-lag-level="2"] .input-mode-picker,
+#app[data-lag-level="2"] .quality-picker,
+#app[data-lag-level="2"] .start-button,
+#app[data-lag-level="2"] .tdinput-panel,
+#app[data-lag-level="2"] .retry-button {
+  background: rgb(6 7 8 / 72%);
 }
 
 #app[data-lag-level="1"] .heart-icon,
@@ -546,6 +568,7 @@ button {
   font-size: 0.66rem;
   font-weight: 850;
   letter-spacing: 0.08em;
+  touch-action: none;
 }
 
 .music-volume-slider {
@@ -556,6 +579,7 @@ button {
   appearance: none;
   background: transparent;
   cursor: pointer;
+  touch-action: none;
 }
 
 .music-volume-slider::-webkit-slider-runnable-track {

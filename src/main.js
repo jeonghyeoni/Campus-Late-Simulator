@@ -36,6 +36,7 @@ const musicMenuButton = document.querySelector("#musicMenuButton");
 const musicTrackList = document.querySelector("#musicTrackList");
 const musicTitle = document.querySelector("#musicTitle");
 const musicVolumeSlider = document.querySelector("#musicVolumeSlider");
+const musicVolumeControl = document.querySelector(".music-volume");
 const musicVolumeValue = document.querySelector("#musicVolumeValue");
 
 const keyboardInput = new KeyboardRunInput(CONFIG, sceneContainer);
@@ -116,6 +117,35 @@ function setBgmVolume(value) {
   bgmVolume = clampVolume(value);
   renderBgmVolume();
   audioEngine.setBgmVolume(bgmVolume);
+}
+
+function setBgmVolumeFromClientX(clientX) {
+  const rect = musicVolumeSlider.getBoundingClientRect();
+  if (rect.width <= 0) {
+    return;
+  }
+
+  const progress = (clientX - rect.left) / rect.width;
+  setBgmVolume(progress);
+}
+
+function handleBgmVolumePointer(event) {
+  if (event.pointerType === "mouse" && event.buttons === 0) {
+    return;
+  }
+
+  event.preventDefault();
+  setBgmVolumeFromClientX(event.clientX);
+}
+
+function handleBgmVolumeTouch(event) {
+  const touch = event.touches[0] ?? event.changedTouches[0];
+  if (!touch) {
+    return;
+  }
+
+  event.preventDefault();
+  setBgmVolumeFromClientX(touch.clientX);
 }
 
 function renderMusicPlayer() {
@@ -663,6 +693,20 @@ musicNextButton.addEventListener("click", () => selectBgmTrack(1));
 musicMenuButton.addEventListener("click", toggleMusicMenu);
 musicVolumeSlider.addEventListener("input", () => {
   setBgmVolume(musicVolumeSlider.value);
+});
+musicVolumeSlider.addEventListener("change", () => {
+  setBgmVolume(musicVolumeSlider.value);
+});
+musicVolumeControl.addEventListener("pointerdown", (event) => {
+  musicVolumeControl.setPointerCapture?.(event.pointerId);
+  handleBgmVolumePointer(event);
+});
+musicVolumeControl.addEventListener("pointermove", handleBgmVolumePointer);
+musicVolumeControl.addEventListener("touchstart", handleBgmVolumeTouch, {
+  passive: false
+});
+musicVolumeControl.addEventListener("touchmove", handleBgmVolumeTouch, {
+  passive: false
 });
 document.addEventListener("click", (event) => {
   if (
