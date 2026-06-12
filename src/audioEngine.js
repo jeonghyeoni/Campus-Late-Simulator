@@ -518,6 +518,7 @@ export class AudioEngine {
     if (
       gameEnded ||
       classStarted ||
+      this.realProfessorTriggered ||
       hasEnteredClassroomHallway ||
       this.hallucinationProfessorLocked
     ) {
@@ -546,6 +547,7 @@ export class AudioEngine {
     }
 
     this.realProfessorTriggered = true;
+    this.hallucinationProfessorLocked = true;
     this.setHallucinationProfessorVolume(0, { force: true });
     this.setParameter("realProfTrigger", 1);
     window.setTimeout(() => {
@@ -562,6 +564,8 @@ export class AudioEngine {
     }
 
     this.classroomHallwayVolumeRaised = true;
+    this.hallucinationProfessorLocked = true;
+    this.setHallucinationProfessorVolume(0, { force: true });
     this.setParameter("realProfVol", 0.5);
   }
 
