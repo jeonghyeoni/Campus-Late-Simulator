@@ -5,6 +5,7 @@ const PUNCH_TRIGGER_SECONDS = 74;
 const PUNCH_TRIGGER_RESET_MS = 50;
 const TRIGGER_RESET_MS = 50;
 const HALLUCINATION_HEART_THRESHOLD_BPM = 100;
+const CLASSROOM_HALLWAY_ENTRY_SECONDS = 321;
 
 export class AudioEngine {
   constructor(config) {
@@ -511,7 +512,8 @@ export class AudioEngine {
     const classStarted = snapshot.classStarted === true;
     const gameEnded = Boolean(snapshot.outcome);
     const hasEnteredClassroomHallway =
-      snapshot.classroomHallway?.hasEntered === true;
+      snapshot.classroomHallway?.hasEntered === true ||
+      Number(snapshot.videoTime) >= CLASSROOM_HALLWAY_ENTRY_SECONDS;
 
     if (
       gameEnded ||
@@ -520,7 +522,7 @@ export class AudioEngine {
       this.hallucinationProfessorLocked
     ) {
       this.hallucinationProfessorLocked = true;
-      this.setHallucinationProfessorVolume(0);
+      this.setHallucinationProfessorVolume(0, { force: true });
       return;
     }
 
@@ -534,8 +536,8 @@ export class AudioEngine {
     this.setHallucinationProfessorVolume(profVol);
   }
 
-  setHallucinationProfessorVolume(value) {
-    this.setParameter("profVol", value);
+  setHallucinationProfessorVolume(value, options = {}) {
+    this.setParameter("profVol", value, options);
   }
 
   updateRealProfessorTrigger(snapshot) {
@@ -544,7 +546,7 @@ export class AudioEngine {
     }
 
     this.realProfessorTriggered = true;
-    this.setHallucinationProfessorVolume(0);
+    this.setHallucinationProfessorVolume(0, { force: true });
     this.setParameter("realProfTrigger", 1);
     window.setTimeout(() => {
       this.setParameter("realProfTrigger", 0);
@@ -568,13 +570,13 @@ export class AudioEngine {
     this.setParameter("realProfNear", near);
   }
 
-  setParameter(name, value) {
+  setParameter(name, value, options = {}) {
     const numericValue = Number(value);
     if (!Number.isFinite(numericValue)) {
       return false;
     }
 
-    if (this.shouldSkipParameterUpdate(name, numericValue)) {
+    if (!options.force && this.shouldSkipParameterUpdate(name, numericValue)) {
       return true;
     }
 
