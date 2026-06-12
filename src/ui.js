@@ -155,37 +155,41 @@ export class OverlayUi {
       "somaticOpacity",
       this.somaticOverlay,
       "--somatic-opacity",
-      this.formatCssNumber(intensity * 0.96)
+      this.formatCssNumber(intensity * (config.overlayOpacity ?? 0.96))
     );
     this.setStyleProperty(
       "somaticTunnel",
       this.somaticOverlay,
       "--somatic-tunnel-alpha",
-      this.formatCssNumber(tunnel * 0.72)
+      this.formatCssNumber(tunnel * (config.tunnelAlpha ?? 0.72))
     );
     this.setStyleProperty(
       "somaticEdge",
       this.somaticOverlay,
       "--somatic-edge-alpha",
-      this.formatCssNumber(tunnel * 0.9)
+      this.formatCssNumber(tunnel * (config.edgeAlpha ?? 0.9))
     );
     this.setStyleProperty(
       "somaticPulse",
       this.somaticOverlay,
       "--somatic-pulse-alpha",
-      this.formatCssNumber((heartbeat * 0.34 + panic * 0.12) * intensity)
+      this.formatCssNumber(
+        (heartbeat * (config.heartbeatPulseAlpha ?? 0.34) +
+          panic * (config.panicPulseAlpha ?? 0.12)) *
+          intensity
+      )
     );
     this.setStyleProperty(
       "somaticOxygen",
       this.somaticOverlay,
       "--somatic-oxygen-alpha",
-      this.formatCssNumber(oxygenDebt * 0.24)
+      this.formatCssNumber(oxygenDebt * (config.oxygenEdgeAlpha ?? 0.24))
     );
     this.setStyleProperty(
       "somaticPanic",
       this.somaticOverlay,
       "--somatic-panic-alpha",
-      this.formatCssNumber(panic * 0.3)
+      this.formatCssNumber(panic * (config.panicStaticAlpha ?? 0.3))
     );
     this.setStyleProperty(
       "somaticHeartbeat",

@@ -96,7 +96,7 @@ button {
   contain: paint;
   background:
     radial-gradient(ellipse at 50% 52%, transparent 0 42%, rgb(6 7 9 / var(--somatic-tunnel-alpha)) 72%, rgb(0 0 0 / var(--somatic-edge-alpha)) 100%),
-    linear-gradient(90deg, rgb(93 190 255 / var(--somatic-oxygen-alpha)) 0%, transparent 11%, transparent 89%, rgb(255 83 97 / var(--somatic-oxygen-alpha)) 100%);
+    linear-gradient(90deg, rgb(54 203 255 / var(--somatic-oxygen-alpha)) 0%, rgb(54 203 255 / var(--somatic-oxygen-alpha)) 8%, transparent 27%, transparent 73%, rgb(255 47 88 / var(--somatic-oxygen-alpha)) 92%, rgb(255 47 88 / var(--somatic-oxygen-alpha)) 100%);
   transition: opacity 260ms ease;
 }
 
@@ -126,7 +126,7 @@ button {
     radial-gradient(ellipse at 50% 54%, transparent 0 36%, rgb(255 83 97 / 24%) 43%, transparent 56%),
     radial-gradient(ellipse at 50% 50%, transparent 0 58%, rgb(255 255 255 / 12%) 60%, transparent 66%);
   mix-blend-mode: screen;
-  transform: scale(calc(1 + var(--somatic-heartbeat) * 0.045));
+  transform: scale(calc(1 + var(--somatic-heartbeat) * 0.095));
   transform-origin: center center;
 }
 
