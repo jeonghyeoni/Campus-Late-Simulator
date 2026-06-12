@@ -13,6 +13,7 @@ import { VideoScene } from "./videoScene.js";
 import { AudioEngine } from "./audioEngine.js";
 
 const sceneContainer = document.querySelector("#scene");
+const appRoot = document.querySelector("#app");
 const startButton = document.querySelector("#startButton");
 const retryButton = document.querySelector("#retryButton");
 const startPanel = document.querySelector("#startPanel");
@@ -61,10 +62,13 @@ let lastConnectionRenderAt = 0;
 let lastRetryButtonVisible = null;
 let frameTimeEmaMs = 16.7;
 let lagLevel = 0;
+const performanceStats = createPerformanceStats();
 const mainRenderCache = new Map();
 
 window.campusLateSimulator = {
   getState: () => cloneSnapshot(simulationState.getSnapshot()),
+  getPerformanceReport: () => clonePerformanceStats(),
+  resetPerformanceReport: () => resetPerformanceStats(),
   getInputSource: () => inputSource,
   getTdInput: () => tdInput,
   getMotionInput: () => motionInput,
@@ -192,6 +196,10 @@ function tick(now) {
 
   const snapshot = simulationState.getSnapshot();
 
+  if (started) {
+    updateVideoProgressStats(now, snapshot);
+  }
+
   videoScene.setPlaybackSpeed(snapshot.playbackSpeed);
   videoScene.update(deltaSeconds, snapshot, performanceSnapshot);
   audioEngine.updateFromSnapshot(snapshot);
@@ -204,6 +212,36 @@ function tick(now) {
   requestAnimationFrame(tick);
 }
 
+function createPerformanceStats() {
+  return {
+    startedAt: performance.now(),
+    frames: 0,
+    longFrames: 0,
+    criticalFrames: 0,
+    maxFrameMs: 0,
+    avgFrameMs: 0,
+    emaFrameMs: 16.7,
+    lagLevel: 0,
+    lagLevelChanges: 0,
+    lagLevel1Frames: 0,
+    lagLevel2Frames: 0,
+    videoStalls: 0,
+    longestVideoStallMs: 0,
+    lastVideoTime: 0,
+    lastVideoProgressAt: performance.now(),
+    activeVideoStallStartedAt: 0
+  };
+}
+
+function resetPerformanceStats() {
+  const freshStats = createPerformanceStats();
+  Object.assign(performanceStats, freshStats);
+  frameTimeEmaMs = 16.7;
+  lagLevel = 0;
+  setDatasetValue("appLagLevel", appRoot, "lagLevel", "0");
+  return clonePerformanceStats();
+}
+
 function updatePerformanceSnapshot(frameMs) {
   const performanceConfig = CONFIG.performance ?? {};
   const smoothing = clampValue(performanceConfig.frameSmoothing ?? 0.08, 0, 1);
@@ -213,7 +251,10 @@ function updatePerformanceSnapshot(frameMs) {
 
   if (Number.isFinite(frameMs) && frameMs > 0) {
     frameTimeEmaMs += (frameMs - frameTimeEmaMs) * smoothing;
+    updateFrameStats(frameMs, frameTimeEmaMs, warningMs, criticalMs);
   }
+
+  const previousLagLevel = lagLevel;
 
   if (frameTimeEmaMs >= criticalMs) {
     lagLevel = 2;
@@ -223,10 +264,88 @@ function updatePerformanceSnapshot(frameMs) {
     lagLevel = 0;
   }
 
+  if (lagLevel !== previousLagLevel) {
+    performanceStats.lagLevelChanges += 1;
+  }
+
+  if (lagLevel === 1) {
+    performanceStats.lagLevel1Frames += 1;
+  } else if (lagLevel === 2) {
+    performanceStats.lagLevel2Frames += 1;
+  }
+
+  performanceStats.emaFrameMs = frameTimeEmaMs;
+  performanceStats.lagLevel = lagLevel;
+  setDatasetValue("appLagLevel", appRoot, "lagLevel", String(lagLevel));
+
   return {
     frameMs: frameTimeEmaMs,
     lagLevel
   };
+}
+
+function updateFrameStats(frameMs, emaFrameMs, warningMs, criticalMs) {
+  performanceStats.frames += 1;
+  performanceStats.maxFrameMs = Math.max(performanceStats.maxFrameMs, frameMs);
+  performanceStats.avgFrameMs +=
+    (frameMs - performanceStats.avgFrameMs) / performanceStats.frames;
+  performanceStats.emaFrameMs = emaFrameMs;
+
+  if (frameMs >= warningMs) {
+    performanceStats.longFrames += 1;
+  }
+
+  if (frameMs >= criticalMs) {
+    performanceStats.criticalFrames += 1;
+  }
+}
+
+function updateVideoProgressStats(now, snapshot) {
+  const video = videoScene.video;
+  const currentTime = video.currentTime || 0;
+  const recovery = CONFIG.video.stallRecovery ?? {};
+  const minProgressSeconds = recovery.minProgressSeconds ?? 0.025;
+  const stalledAfterMs = recovery.stalledAfterMs ?? 900;
+
+  if (
+    video.paused ||
+    video.ended ||
+    snapshot?.outcome ||
+    !Number.isFinite(currentTime)
+  ) {
+    performanceStats.lastVideoTime = currentTime;
+    performanceStats.lastVideoProgressAt = now;
+    performanceStats.activeVideoStallStartedAt = 0;
+    return;
+  }
+
+  const progressed =
+    Math.abs(currentTime - performanceStats.lastVideoTime) >=
+    minProgressSeconds;
+
+  if (progressed) {
+    if (performanceStats.activeVideoStallStartedAt) {
+      performanceStats.longestVideoStallMs = Math.max(
+        performanceStats.longestVideoStallMs,
+        now - performanceStats.activeVideoStallStartedAt
+      );
+      performanceStats.activeVideoStallStartedAt = 0;
+    }
+
+    performanceStats.lastVideoTime = currentTime;
+    performanceStats.lastVideoProgressAt = now;
+    return;
+  }
+
+  const stalledMs = now - performanceStats.lastVideoProgressAt;
+  if (stalledMs < stalledAfterMs) {
+    return;
+  }
+
+  if (!performanceStats.activeVideoStallStartedAt) {
+    performanceStats.activeVideoStallStartedAt = now;
+    performanceStats.videoStalls += 1;
+  }
 }
 
 function dispatchStateEventIfDue(now, snapshot) {
@@ -255,6 +374,40 @@ function cloneSnapshot(snapshot) {
     endingEffect: { ...snapshot.endingEffect }
   };
 }
+
+function clonePerformanceStats() {
+  const elapsedMs = performance.now() - performanceStats.startedAt;
+  const frames = Math.max(1, performanceStats.frames);
+
+  return {
+    elapsedSeconds: Number((elapsedMs / 1000).toFixed(1)),
+    frames: performanceStats.frames,
+    averageFps: Number(((frames / Math.max(elapsedMs, 1)) * 1000).toFixed(1)),
+    avgFrameMs: Number(performanceStats.avgFrameMs.toFixed(2)),
+    emaFrameMs: Number(performanceStats.emaFrameMs.toFixed(2)),
+    maxFrameMs: Number(performanceStats.maxFrameMs.toFixed(2)),
+    longFrames: performanceStats.longFrames,
+    criticalFrames: performanceStats.criticalFrames,
+    lagLevel: performanceStats.lagLevel,
+    lagLevelChanges: performanceStats.lagLevelChanges,
+    lagLevel1Frames: performanceStats.lagLevel1Frames,
+    lagLevel2Frames: performanceStats.lagLevel2Frames,
+    videoStalls: performanceStats.videoStalls,
+    longestVideoStallMs: Number(
+      performanceStats.longestVideoStallMs.toFixed(1)
+    )
+  };
+}
+
+window.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    return;
+  }
+
+  previousTime = performance.now();
+  performanceStats.lastVideoProgressAt = previousTime;
+  performanceStats.activeVideoStallStartedAt = 0;
+});
 
 function renderTdInputConnection(force = false) {
   const now = performance.now();

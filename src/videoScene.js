@@ -17,12 +17,15 @@ export class VideoScene {
     this.lastVideoTransform = "";
     this.lastVideoFilter = "";
     this.lastVideoFilterUpdateAt = 0;
+    this.pointerBounds = null;
+    this.transformSettled = false;
 
     this.video = this.createVideoElement();
     this.video.className = "scene-video";
     this.container.appendChild(this.video);
 
     this.bindPointerControls();
+    this.updatePointerBounds();
     this.updateTransform();
   }
 
@@ -61,32 +64,51 @@ export class VideoScene {
   }
 
   bindPointerControls() {
+    window.addEventListener("resize", () => {
+      this.pointerBounds = null;
+    });
+
+    this.container.addEventListener("pointerenter", () => {
+      this.updatePointerBounds();
+    });
+
     this.container.addEventListener("pointermove", (event) => {
       const flat = this.config.flatView;
-      const rect = this.container.getBoundingClientRect();
-      const halfControlWidth = (rect.width * flat.controlAreaRatio) / 2;
-      const halfControlHeight = (rect.height * flat.controlAreaRatio) / 2;
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
+      const bounds = this.pointerBounds ?? this.updatePointerBounds();
       const normalizedX = clamp(
-        (event.clientX - centerX) / halfControlWidth,
+        (event.clientX - bounds.centerX) / bounds.halfControlWidth,
         -1,
         1
       );
       const normalizedY = clamp(
-        (event.clientY - centerY) / halfControlHeight,
+        (event.clientY - bounds.centerY) / bounds.halfControlHeight,
         -1,
         1
       );
 
       this.targetOffsetX = -normalizedX * flat.maxTranslateXPercent;
       this.targetOffsetY = -normalizedY * flat.maxTranslateYPercent;
+      this.transformSettled = false;
     });
 
     this.container.addEventListener("pointerleave", () => {
       this.targetOffsetX = 0;
       this.targetOffsetY = 0;
+      this.transformSettled = false;
     });
+  }
+
+  updatePointerBounds() {
+    const flat = this.config.flatView;
+    const rect = this.container.getBoundingClientRect();
+    this.pointerBounds = {
+      centerX: rect.left + rect.width / 2,
+      centerY: rect.top + rect.height / 2,
+      halfControlWidth: Math.max((rect.width * flat.controlAreaRatio) / 2, 1),
+      halfControlHeight: Math.max((rect.height * flat.controlAreaRatio) / 2, 1)
+    };
+
+    return this.pointerBounds;
   }
 
   async play() {
@@ -107,6 +129,7 @@ export class VideoScene {
     this.targetOffsetY = 0;
     this.currentOffsetX = 0;
     this.currentOffsetY = 0;
+    this.transformSettled = false;
     this.video.playbackRate = this.config.run.idleSpeed;
     this.lastAppliedPlaybackSpeed = this.config.run.idleSpeed;
     this.pendingPlaybackSpeed = null;
@@ -160,9 +183,22 @@ export class VideoScene {
 
     this.currentOffsetX = lerp(this.currentOffsetX, this.targetOffsetX, amount);
     this.currentOffsetY = lerp(this.currentOffsetY, this.targetOffsetY, amount);
+    this.snapSettledOffsets();
     this.flushPlaybackSpeedIfDue();
     this.updateTransform(snapshot, performanceSnapshot);
     this.recoverPlaybackStall(snapshot);
+  }
+
+  snapSettledOffsets() {
+    const epsilon = 0.001;
+
+    if (Math.abs(this.currentOffsetX - this.targetOffsetX) < epsilon) {
+      this.currentOffsetX = this.targetOffsetX;
+    }
+
+    if (Math.abs(this.currentOffsetY - this.targetOffsetY) < epsilon) {
+      this.currentOffsetY = this.targetOffsetY;
+    }
   }
 
   flushPlaybackSpeedIfDue() {
@@ -252,20 +288,48 @@ export class VideoScene {
     const overload = snapshot?.overload;
     const somatic = snapshot?.somaticEffect ?? {};
     const somaticConfig = this.config.somaticEffect ?? {};
-    const scale = overload?.active
+    const overloadActive = overload?.active === true;
+    const symptomActive = (somatic.intensity ?? 0) > 0.015;
+    const endingBlur = snapshot?.endingEffect?.blurPx ?? 0;
+    const symptomBlur = somatic.blurPx ?? 0;
+    const needsDynamicEffects =
+      overloadActive || symptomActive || endingBlur > 0.01 || symptomBlur > 0.01;
+    const scale = overloadActive
       ? this.config.overload.scale
       : this.config.flatView.scale;
-    const overloadY = overload?.active
+
+    if (!needsDynamicEffects) {
+      if (this.transformSettled && !this.pendingPlaybackSpeed) {
+        return;
+      }
+
+      this.applyVideoTransformAndFilter(
+        this.currentOffsetX,
+        this.currentOffsetY,
+        scale,
+        "",
+        performanceSnapshot
+      );
+      this.transformSettled =
+        this.currentOffsetX === this.targetOffsetX &&
+        this.currentOffsetY === this.targetOffsetY &&
+        !this.pendingPlaybackSpeed;
+      return;
+    }
+
+    this.transformSettled = false;
+
+    const overloadY = overloadActive
       ? Math.sin(
           overload.elapsedSeconds * Math.PI * 2 * this.config.overload.swayHz
         ) * this.config.overload.swayPercent
       : 0;
-    const overloadShakeX = overload?.active
+    const overloadShakeX = overloadActive
       ? Math.sin(overload.elapsedSeconds * Math.PI * 2 * 5.6) *
         Math.sin(overload.elapsedSeconds * Math.PI * 2 * 2.3) *
         (this.config.overload.shakeXPercent ?? 0)
       : 0;
-    const overloadShakeY = overload?.active
+    const overloadShakeY = overloadActive
       ? Math.cos(overload.elapsedSeconds * Math.PI * 2 * 4.7) *
         Math.sin(overload.elapsedSeconds * Math.PI * 2 * 1.9) *
         (this.config.overload.shakeYPercent ?? 0)
@@ -285,16 +349,12 @@ export class VideoScene {
       Math.cos(elapsedSeconds * 13.1) *
       Math.sin(elapsedSeconds * 4.3) *
       panicSway;
-    const endingBlur = snapshot?.endingEffect?.blurPx ?? 0;
-    const symptomBlur = somatic.blurPx ?? 0;
     const totalBlur =
       (endingBlur + symptomBlur) * this.getAdaptiveBlurScale(performanceSnapshot);
-    const symptomActive = (somatic.intensity ?? 0) > 0.015;
 
     const translateX = this.currentOffsetX + overloadShakeX + panicX;
     const translateY =
       this.currentOffsetY + overloadY + overloadShakeY + breathY + panicY;
-    const transform = `translate3d(${translateX.toFixed(3)}%, ${translateY.toFixed(3)}%, 0) scale(${(scale + heartbeatZoom).toFixed(4)})`;
     const filter =
       totalBlur > 0.01 || symptomActive
         ? [
@@ -312,6 +372,24 @@ export class VideoScene {
             .filter(Boolean)
             .join(" ")
         : "";
+
+    this.applyVideoTransformAndFilter(
+      translateX,
+      translateY,
+      scale + heartbeatZoom,
+      filter,
+      performanceSnapshot
+    );
+  }
+
+  applyVideoTransformAndFilter(
+    translateX,
+    translateY,
+    scale,
+    filter,
+    performanceSnapshot
+  ) {
+    const transform = `translate3d(${translateX.toFixed(3)}%, ${translateY.toFixed(3)}%, 0) scale(${scale.toFixed(4)})`;
 
     if (transform !== this.lastVideoTransform) {
       this.video.style.transform = transform;
