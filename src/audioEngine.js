@@ -487,7 +487,14 @@ export class AudioEngine {
   }
 
   resetProfessorTriggersIfNeeded(snapshot) {
-    if (snapshot.classStarted === false && !snapshot.outcome) {
+    const hasEnteredClassroomHallway =
+      snapshot.classroomHallway?.hasEntered === true;
+
+    if (
+      snapshot.classStarted === false &&
+      !snapshot.outcome &&
+      !hasEnteredClassroomHallway
+    ) {
       this.realProfessorTriggered = false;
       this.hallucinationProfessorLocked = false;
     }
@@ -503,8 +510,15 @@ export class AudioEngine {
   updateHallucinationProfessorVolume(snapshot) {
     const classStarted = snapshot.classStarted === true;
     const gameEnded = Boolean(snapshot.outcome);
+    const hasEnteredClassroomHallway =
+      snapshot.classroomHallway?.hasEntered === true;
 
-    if (gameEnded || classStarted || this.hallucinationProfessorLocked) {
+    if (
+      gameEnded ||
+      classStarted ||
+      hasEnteredClassroomHallway ||
+      this.hallucinationProfessorLocked
+    ) {
       this.hallucinationProfessorLocked = true;
       this.setHallucinationProfessorVolume(0);
       return;

@@ -510,8 +510,9 @@ export class SimulationState {
     }
 
     if (this.shouldShowRunPrompt()) {
-      this.message =
+      const runPrompt =
         this.inputSource.getRunPromptMessage?.() ?? "hold space to run";
+      this.message = `3 minutes until class starts.\n${runPrompt}`;
       return;
     }
 
