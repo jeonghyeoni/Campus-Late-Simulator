@@ -488,24 +488,22 @@ export class AudioEngine {
   }
 
   resetProfessorTriggersIfNeeded(snapshot) {
-    const hasEnteredClassroomHallway =
-      snapshot.classroomHallway?.hasEntered === true;
-
-    if (
-      snapshot.classStarted === false &&
-      !snapshot.outcome &&
-      !hasEnteredClassroomHallway
-    ) {
-      this.realProfessorTriggered = false;
-      this.hallucinationProfessorLocked = false;
-    }
-
     if (!snapshot.classroomHallway?.hasEntered) {
       if (this.classroomHallwayVolumeRaised) {
         this.setParameter("realProfVol", 0);
       }
       this.classroomHallwayVolumeRaised = false;
     }
+  }
+
+  resetProfessorVoiceStateForRetry() {
+    this.realProfessorTriggered = false;
+    this.hallucinationProfessorLocked = false;
+    this.classroomHallwayVolumeRaised = false;
+    this.setHallucinationProfessorVolume(0, { force: true });
+    this.setParameter("realProfTrigger", 0, { force: true });
+    this.setParameter("realProfVol", 0, { force: true });
+    this.setParameter("realProfNear", 0, { force: true });
   }
 
   updateHallucinationProfessorVolume(snapshot) {

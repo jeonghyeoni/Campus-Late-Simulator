@@ -589,6 +589,7 @@ async function startExperience() {
 
 async function retryExperience() {
   simulationState.reset();
+  audioEngine.resetProfessorVoiceStateForRetry();
   videoScene.resetToStart();
   retryButton.hidden = true;
   started = false;
