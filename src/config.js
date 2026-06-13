@@ -86,7 +86,7 @@ export const CONFIG = {
     enabled: true,
     patchUrl: "/rnbo/CampusLateAudioEngine.export.json",
     dependenciesUrl: "/rnbo/dependencies.json",
-    bgmVolume: 0.7,
+    bgmVolume: 0.4,
     bgmTracks: [
       {
         title: "Monume House",
@@ -220,7 +220,7 @@ export const CONFIG = {
     overlayOpacity: 0.98,
     tunnelAlpha: 0.84,
     edgeAlpha: 1,
-    heartbeatPulseAlpha: 0.58,
+    heartbeatPulseAlpha: 0.86,
     panicPulseAlpha: 0.18,
     oxygenEdgeAlpha: 0.88,
     panicStaticAlpha: 0.38,
