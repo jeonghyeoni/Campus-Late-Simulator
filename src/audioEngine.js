@@ -6,6 +6,7 @@ const PUNCH_TRIGGER_RESET_MS = 50;
 const TRIGGER_RESET_MS = 50;
 const HALLUCINATION_HEART_THRESHOLD_BPM = 100;
 const CLASSROOM_HALLWAY_ENTRY_SECONDS = 321;
+const HALLUCINATION_PROFESSOR_VOLUME_PARAMS = ["profVol", "profVoiceVol"];
 
 export class AudioEngine {
   constructor(config) {
@@ -507,20 +508,7 @@ export class AudioEngine {
   }
 
   updateHallucinationProfessorVolume(snapshot) {
-    const classStarted = snapshot.classStarted === true;
-    const gameEnded = Boolean(snapshot.outcome);
-    const hasEnteredClassroomHallway =
-      snapshot.classroomHallway?.hasEntered === true ||
-      Number(snapshot.videoTime) >= CLASSROOM_HALLWAY_ENTRY_SECONDS;
-
-    if (
-      gameEnded ||
-      classStarted ||
-      this.realProfessorTriggered ||
-      hasEnteredClassroomHallway ||
-      this.hallucinationProfessorLocked
-    ) {
-      this.hallucinationProfessorLocked = true;
+    if (this.shouldSuppressHallucinationProfessor(snapshot)) {
       this.setHallucinationProfessorVolume(0, { force: true });
       return;
     }
@@ -536,7 +524,40 @@ export class AudioEngine {
   }
 
   setHallucinationProfessorVolume(value, options = {}) {
-    this.setParameter("profVol", value, options);
+    const numericValue = Number(value);
+    const nextValue =
+      this.hallucinationProfessorLocked && numericValue > 0 ? 0 : numericValue;
+    const nextOptions =
+      this.hallucinationProfessorLocked && numericValue > 0
+        ? { ...options, force: true }
+        : options;
+    let updated = false;
+
+    for (const paramName of HALLUCINATION_PROFESSOR_VOLUME_PARAMS) {
+      updated = this.setParameter(paramName, nextValue, nextOptions) || updated;
+    }
+
+    return updated;
+  }
+
+  shouldSuppressHallucinationProfessor(snapshot) {
+    const classStarted = snapshot.classStarted === true;
+    const gameEnded = Boolean(snapshot.outcome);
+    const hasEnteredClassroomHallway =
+      snapshot.classroomHallway?.hasEntered === true ||
+      Number(snapshot.videoTime) >= CLASSROOM_HALLWAY_ENTRY_SECONDS;
+    const shouldSuppress =
+      gameEnded ||
+      classStarted ||
+      this.realProfessorTriggered ||
+      hasEnteredClassroomHallway ||
+      this.hallucinationProfessorLocked;
+
+    if (shouldSuppress) {
+      this.hallucinationProfessorLocked = true;
+    }
+
+    return shouldSuppress;
   }
 
   updateRealProfessorTrigger(snapshot) {
@@ -578,6 +599,14 @@ export class AudioEngine {
       return false;
     }
 
+    if (
+      this.isHallucinationProfessorVolumeParam(name) &&
+      this.hallucinationProfessorLocked &&
+      numericValue > 0
+    ) {
+      return this.setParameter(name, 0, { ...options, force: true });
+    }
+
     if (!options.force && this.shouldSkipParameterUpdate(name, numericValue)) {
       return true;
     }
@@ -595,6 +624,10 @@ export class AudioEngine {
       console.warn(`Unable to set RNBO parameter "${name}".`, error);
       return false;
     }
+  }
+
+  isHallucinationProfessorVolumeParam(name) {
+    return HALLUCINATION_PROFESSOR_VOLUME_PARAMS.includes(name);
   }
 
   shouldSkipParameterUpdate(name, value) {
