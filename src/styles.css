@@ -1044,6 +1044,16 @@ button {
   cursor: not-allowed;
 }
 
+.headphone-notice {
+  margin: -4px 0 0;
+  color: rgb(247 251 250 / 70%);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-align: center;
+  text-shadow: 0 2px 14px rgb(0 0 0 / 54%);
+}
+
 .controller-page {
   min-height: 100svh;
   padding:
