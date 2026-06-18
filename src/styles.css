@@ -1046,12 +1046,12 @@ button {
 
 .headphone-notice {
   margin: -4px 0 0;
-  color: rgb(247 251 250 / 95%);
+  color: rgb(247 251 250 / 100%);
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   text-align: center;
-  text-shadow: 0 2px 14px rgb(0 0 0 / 54%);
+  text-shadow: 0 2px 14px rgb(0 0 0 / 80%);
 }
 
 .controller-page {
