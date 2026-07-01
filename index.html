@@ -153,6 +153,46 @@
         </label>
         <button id="startButton" class="start-button" type="button">START</button>
         <p class="headphone-notice">Headphones recommended for the best audio experience.</p>
+        <button
+          id="creditsButton"
+          class="credits-button"
+          type="button"
+          aria-expanded="false"
+          aria-controls="creditsPanel"
+        >
+          Credits
+        </button>
+        <section
+          id="creditsPanel"
+          class="credits-panel"
+          aria-labelledby="creditsTitle"
+          hidden
+        >
+          <div class="credits-panel__header">
+            <h2 id="creditsTitle">Credits</h2>
+            <button id="creditsCloseButton" type="button" aria-label="Close credits">
+              ×
+            </button>
+          </div>
+          <dl class="credits-list">
+            <div>
+              <dt>Concept & Planning</dt>
+              <dd>All</dd>
+            </div>
+            <div>
+              <dt>Web Development</dt>
+              <dd>민정현</dd>
+            </div>
+            <div>
+              <dt>Cinematography</dt>
+              <dd>김가일</dd>
+            </div>
+            <div>
+              <dt>Sound Direction & RNBO Patch Design</dt>
+              <dd>민정현, 정승현, 이승재, 최희제</dd>
+            </div>
+          </dl>
+        </section>
       </div>
     </main>
 

@@ -17,6 +17,9 @@ const appRoot = document.querySelector("#app");
 const startButton = document.querySelector("#startButton");
 const retryButton = document.querySelector("#retryButton");
 const startPanel = document.querySelector("#startPanel");
+const creditsButton = document.querySelector("#creditsButton");
+const creditsPanel = document.querySelector("#creditsPanel");
+const creditsCloseButton = document.querySelector("#creditsCloseButton");
 const qualitySelect = document.querySelector("#qualitySelect");
 const inputModeControls = document.querySelectorAll("input[name='inputMode']");
 const tdInputConnection = document.querySelector("#tdInputConnection");
@@ -569,6 +572,11 @@ function getStartButtonText(mode, connection, readyToStart) {
   return "CONNECT DEVICE";
 }
 
+function setCreditsVisible(visible) {
+  creditsPanel.hidden = !visible;
+  creditsButton.setAttribute("aria-expanded", visible ? "true" : "false");
+}
+
 async function startExperience() {
   if (!inputSource.isReadyToStart()) {
     renderStartButton();
@@ -689,6 +697,10 @@ inputModeControls.forEach((control) => {
 
 startButton.addEventListener("click", startExperience);
 retryButton.addEventListener("click", retryExperience);
+creditsButton.addEventListener("click", () => {
+  setCreditsVisible(creditsPanel.hidden);
+});
+creditsCloseButton.addEventListener("click", () => setCreditsVisible(false));
 musicPrevButton.addEventListener("click", () => selectBgmTrack(-1));
 musicNextButton.addEventListener("click", () => selectBgmTrack(1));
 musicMenuButton.addEventListener("click", toggleMusicMenu);
@@ -711,6 +723,15 @@ musicVolumeControl.addEventListener("touchmove", handleBgmVolumeTouch, {
 });
 document.addEventListener("click", (event) => {
   if (
+    !creditsPanel.hidden &&
+    event.target !== creditsButton &&
+    !creditsButton.contains(event.target) &&
+    !creditsPanel.contains(event.target)
+  ) {
+    setCreditsVisible(false);
+  }
+
+  if (
     musicTrackList.hidden ||
     event.target === musicMenuButton ||
     musicMenuButton.contains(event.target) ||
@@ -724,6 +745,7 @@ document.addEventListener("click", (event) => {
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     setMusicMenuOpen(false);
+    setCreditsVisible(false);
   }
 });
 
